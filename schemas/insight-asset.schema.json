@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serialos.local/schemas/insight-asset.schema.json",
+  "title": "InsightAssetExtraction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "materialId",
+    "materialVersionId",
+    "assets",
+    "processingNotes"
+  ],
+  "properties": {
+    "materialId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "materialVersionId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "assets": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "title",
+          "statement",
+          "context",
+          "audiences",
+          "confidence",
+          "privacyLevel",
+          "requiresUserConfirmation",
+          "sources"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "opinion",
+              "story",
+              "case",
+              "fact",
+              "framework",
+              "metaphor",
+              "audience_question",
+              "quote",
+              "contrarian_point"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "context": {
+            "type": "string",
+            "maxLength": 3000
+          },
+          "audiences": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "privacyLevel": {
+            "enum": [
+              "public_usable",
+              "internal_reference",
+              "do_not_quote"
+            ]
+          },
+          "personalExperienceStatus": {
+            "enum": [
+              "not_applicable",
+              "explicit",
+              "inferred_needs_confirmation",
+              "not_personal"
+            ]
+          },
+          "requiresUserConfirmation": {
+            "type": "boolean"
+          },
+          "suggestedTags": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "maxLength": 50
+            }
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "chunkId",
+                "excerpt",
+                "supportType"
+              ],
+              "properties": {
+                "chunkId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "startOffset": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "endOffset": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "startMs": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "endMs": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                },
+                "excerpt": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                },
+                "supportType": {
+                  "enum": [
+                    "direct",
+                    "paraphrase",
+                    "context",
+                    "contradicts"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "processingNotes": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    }
+  }
+}

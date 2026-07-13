@@ -1,0 +1,3481 @@
+openapi: 3.1.0
+info:
+  title: SerialOS API
+  version: 1.0.0
+  description: 'MVP API contract for SerialOS. Session authentication and workspace scoping
+
+    are mandatory. The server returns 404 for resources outside the active workspace.
+
+    '
+servers:
+- url: /api/v1
+security:
+- sessionCookie: []
+tags:
+- name: Audit
+- name: Usage
+- name: Claims
+- name: Onboarding
+- name: Auth
+- name: Workspace
+- name: Creator Profile
+- name: Columns
+- name: Materials
+- name: Assets
+- name: Topics
+- name: Content Runs
+- name: Review
+- name: Artifacts
+- name: Exports
+- name: Publishing
+- name: Jobs
+- name: Operations
+paths:
+  /workspace:
+    get:
+      tags:
+      - Workspace
+      operationId: getWorkspace
+      responses:
+        '200':
+          description: Current workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+      - Workspace
+      operationId: updateWorkspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceUpdate'
+      responses:
+        '200':
+          description: Updated workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /workspace/deletion:
+    post:
+      tags:
+      - Workspace
+      operationId: requestWorkspaceDeletion
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - workspaceName
+              - reauthenticationToken
+              properties:
+                workspaceName:
+                  type: string
+                reauthenticationToken:
+                  type: string
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+    get:
+      tags:
+      - Workspace
+      operationId: getWorkspaceDeletion
+      responses:
+        '200':
+          description: Deletion status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /creator-profile:
+    get:
+      tags:
+      - Creator Profile
+      operationId: getCreatorProfile
+      responses:
+        '200':
+          description: Active and draft profile
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: ../schemas/creator-profile.schema.json
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+      - Creator Profile
+      operationId: updateCreatorProfileDraft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - version
+              - patch
+              properties:
+                version:
+                  type: integer
+                  minimum: 1
+                patch:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Profile draft
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/creator-profile.schema.json
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /creator-profile/suggestions:
+    post:
+      tags:
+      - Creator Profile
+      operationId: requestProfileSuggestions
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /creator-profile/activate:
+    post:
+      tags:
+      - Creator Profile
+      operationId: activateCreatorProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - profileVersion
+              properties:
+                profileVersion:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Activated profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/creator-profile.schema.json
+        default:
+          $ref: '#/components/responses/Error'
+  /columns:
+    get:
+      tags:
+      - Columns
+      operationId: listColumns
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Columns
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags:
+      - Columns
+      operationId: createColumn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ColumnCreate'
+      responses:
+        '201':
+          description: Created column
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /columns/{columnId}:
+    parameters:
+    - $ref: '#/components/parameters/ColumnId'
+    get:
+      tags:
+      - Columns
+      operationId: getColumn
+      responses:
+        '200':
+          description: Column
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+      - Columns
+      operationId: updateColumn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - version
+              - patch
+              properties:
+                version:
+                  type: integer
+                patch:
+                  $ref: '#/components/schemas/ColumnCreate'
+      responses:
+        '200':
+          description: Updated column
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials/text:
+    post:
+      tags:
+      - Materials
+      operationId: createTextMaterial
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - text
+              - privacyLevel
+              - isPersonalExperience
+              properties:
+                title:
+                  type: string
+                  maxLength: 200
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 100000
+                privacyLevel:
+                  $ref: '#/components/schemas/PrivacyLevel'
+                isPersonalExperience:
+                  type: boolean
+                tags:
+                  type: array
+                  maxItems: 30
+                  items:
+                    type: string
+      responses:
+        '202':
+          description: Material created and processing queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialJobResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials/url:
+    post:
+      tags:
+      - Materials
+      operationId: createUrlMaterial
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - url
+              - privacyLevel
+              properties:
+                url:
+                  type: string
+                  format: uri
+                title:
+                  type: string
+                  maxLength: 200
+                privacyLevel:
+                  $ref: '#/components/schemas/PrivacyLevel'
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials/uploads:
+    post:
+      tags:
+      - Materials
+      operationId: createUploadSession
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadCreate'
+      responses:
+        '201':
+          description: Signed upload session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadSessionResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials/{materialId}/complete-upload:
+    post:
+      tags:
+      - Materials
+      operationId: completeMaterialUpload
+      parameters:
+      - $ref: '#/components/parameters/MaterialId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials:
+    get:
+      tags:
+      - Materials
+      operationId: listMaterials
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: type
+        in: query
+        schema:
+          type: string
+      - name: q
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Materials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials/{materialId}:
+    parameters:
+    - $ref: '#/components/parameters/MaterialId'
+    get:
+      tags:
+      - Materials
+      operationId: getMaterial
+      responses:
+        '200':
+          description: Material
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    $ref: ../schemas/material-item.schema.json
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+      - Materials
+      operationId: updateMaterial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - version
+              - patch
+              properties:
+                version:
+                  type: integer
+                patch:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Updated material
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/material-item.schema.json
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      tags:
+      - Materials
+      operationId: deleteMaterial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - mode
+              - version
+              properties:
+                mode:
+                  enum:
+                  - delete_file_keep_confirmed_summary
+                  - delete_with_derivatives
+                version:
+                  type: integer
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials/{materialId}/reprocess:
+    post:
+      tags:
+      - Materials
+      operationId: reprocessMaterial
+      parameters:
+      - $ref: '#/components/parameters/MaterialId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                materialVersionId:
+                  type: string
+                  format: uuid
+                fromStep:
+                  type: string
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /assets:
+    get:
+      tags:
+      - Assets
+      operationId: listInsightAssets
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      - name: q
+        in: query
+        schema:
+          type: string
+      - name: type
+        in: query
+        schema:
+          type: string
+      - name: confirmation
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Insight assets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /assets/{assetId}:
+    parameters:
+    - $ref: '#/components/parameters/AssetId'
+    get:
+      tags:
+      - Assets
+      operationId: getInsightAsset
+      responses:
+        '200':
+          description: Insight asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+      - Assets
+      operationId: updateInsightAsset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - version
+              - patch
+              properties:
+                version:
+                  type: integer
+                patch:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Updated asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /assets/{assetId}/confirm:
+    post:
+      tags:
+      - Assets
+      operationId: confirmInsightAsset
+      parameters:
+      - $ref: '#/components/parameters/AssetId'
+      responses:
+        '200':
+          description: Confirmed asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /assets/merge:
+    post:
+      tags:
+      - Assets
+      operationId: mergeInsightAssets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - sourceAssetIds
+              - merged
+              properties:
+                sourceAssetIds:
+                  type: array
+                  minItems: 2
+                  maxItems: 20
+                  items:
+                    type: string
+                    format: uuid
+                merged:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Merged asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /topic-sessions:
+    post:
+      tags:
+      - Topics
+      operationId: createTopicSession
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicSessionCreate'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /topic-sessions/{topicSessionId}:
+    get:
+      tags:
+      - Topics
+      operationId: getTopicSession
+      parameters:
+      - name: topicSessionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Topic session and candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/topic-candidate.schema.json
+        default:
+          $ref: '#/components/responses/Error'
+  /topic-candidates/{topicCandidateId}:
+    patch:
+      tags:
+      - Topics
+      operationId: updateTopicCandidate
+      parameters:
+      - $ref: '#/components/parameters/TopicCandidateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - version
+              - patch
+              properties:
+                version:
+                  type: integer
+                patch:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Updated candidate
+        default:
+          $ref: '#/components/responses/Error'
+  /topic-candidates/{topicCandidateId}/feedback:
+    post:
+      tags:
+      - Topics
+      operationId: addTopicCandidateFeedback
+      parameters:
+      - $ref: '#/components/parameters/TopicCandidateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - reason
+              properties:
+                reason:
+                  enum:
+                  - not_my_view
+                  - too_generic
+                  - already_covered
+                  - weak_evidence
+                  - wrong_audience
+                  - private
+                  - other
+                note:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '204':
+          description: Recorded
+        default:
+          $ref: '#/components/responses/Error'
+  /topic-candidates/{topicCandidateId}/select:
+    post:
+      tags:
+      - Topics
+      operationId: selectTopicCandidate
+      parameters:
+      - $ref: '#/components/parameters/TopicCandidateId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201':
+          description: Content run draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentRunResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs:
+    get:
+      tags:
+      - Content Runs
+      operationId: listContentRuns
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Content runs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentRunListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags:
+      - Content Runs
+      operationId: createContentRun
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentRunCreate'
+      responses:
+        '201':
+          description: Content run draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentRunResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}:
+    get:
+      tags:
+      - Content Runs
+      operationId: getContentRun
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Content run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentRunResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/start:
+    post:
+      tags:
+      - Content Runs
+      operationId: startContentRun
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/cancel:
+    post:
+      tags:
+      - Content Runs
+      operationId: cancelContentRun
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/retry:
+    post:
+      tags:
+      - Content Runs
+      operationId: retryContentRun
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fromStep:
+                  type: string
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/interview:
+    get:
+      tags:
+      - Content Runs
+      operationId: getInterview
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Interview questions and answers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InterviewQuestion'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/interview/answers:
+    post:
+      tags:
+      - Content Runs
+      operationId: saveInterviewAnswers
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - answers
+              properties:
+                answers:
+                  type: array
+                  minItems: 1
+                  maxItems: 5
+                  items:
+                    type: object
+                    required:
+                    - questionId
+                    - text
+                    - saveAsAsset
+                    properties:
+                      questionId:
+                        type: string
+                        format: uuid
+                      text:
+                        type: string
+                        maxLength: 20000
+                      saveAsAsset:
+                        type: boolean
+      responses:
+        '200':
+          description: Saved
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/resume:
+    post:
+      tags:
+      - Content Runs
+      operationId: resumeContentRun
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/brief:
+    get:
+      tags:
+      - Content Runs
+      operationId: getContentBrief
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Current brief
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/content-brief.schema.json
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+      - Content Runs
+      operationId: updateContentBrief
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedPatch'
+      responses:
+        '200':
+          description: Updated brief
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/content-brief.schema.json
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/assets:
+    get:
+      tags:
+      - Content Runs
+      operationId: listContentAssets
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Content pack assets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContentAsset'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-assets/{contentAssetId}:
+    get:
+      tags:
+      - Content Runs
+      operationId: getContentAsset
+      parameters:
+      - $ref: '#/components/parameters/ContentAssetId'
+      responses:
+        '200':
+          description: Content asset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ContentAsset'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+      - Content Runs
+      operationId: updateContentAsset
+      parameters:
+      - $ref: '#/components/parameters/ContentAssetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - version
+              - body
+              properties:
+                version:
+                  type: integer
+                body:
+                  type: string
+                  maxLength: 100000
+                structuredBody:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: New content version
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ContentAsset'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-assets/{contentAssetId}/regenerate:
+    post:
+      tags:
+      - Content Runs
+      operationId: regenerateContentAssetSelection
+      parameters:
+      - $ref: '#/components/parameters/ContentAssetId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegenerationRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/review:
+    get:
+      tags:
+      - Review
+      operationId: getContentRunReview
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Current review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/review-result.schema.json
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags:
+      - Review
+      operationId: requestContentRunReview
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /review-findings/{findingId}:
+    patch:
+      tags:
+      - Review
+      operationId: updateReviewFinding
+      parameters:
+      - name: findingId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  enum:
+                  - resolved
+                  - accepted_risk
+                  - dismissed
+                reason:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Finding updated
+        '422':
+          description: Blocker cannot be accepted as risk
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/approve:
+    post:
+      tags:
+      - Review
+      operationId: approveContentRun
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+              - versionSetHash
+              properties:
+                versionSetHash:
+                  type: string
+                  pattern: ^[a-f0-9]{64}$
+      responses:
+        '201':
+          description: Approval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalResponse'
+        '422':
+          description: Approval blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/artifact:
+    get:
+      tags:
+      - Artifacts
+      operationId: getArtifact
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Artifact spec
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/interactive-artifact.schema.json
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/artifact/generate:
+    post:
+      tags:
+      - Artifacts
+      operationId: generateArtifact
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  enum:
+                  - calculator
+                  - quiz
+                  - checklist
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /artifacts/{artifactId}:
+    patch:
+      tags:
+      - Artifacts
+      operationId: updateArtifact
+      parameters:
+      - name: artifactId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - version
+              - spec
+              properties:
+                version:
+                  type: integer
+                spec:
+                  $ref: ../schemas/interactive-artifact.schema.json
+      responses:
+        '200':
+          description: Updated artifact
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /artifacts/{artifactId}/build:
+    post:
+      tags:
+      - Artifacts
+      operationId: buildArtifact
+      parameters:
+      - name: artifactId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /exports:
+    get:
+      tags:
+      - Exports
+      operationId: listExports
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Exports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      tags:
+      - Exports
+      operationId: createExport
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportCreate'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /exports/{exportId}:
+    get:
+      tags:
+      - Exports
+      operationId: getExport
+      parameters:
+      - name: exportId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Export status and signed URL if ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-assets/{contentAssetId}/publishing-records:
+    post:
+      tags:
+      - Publishing
+      operationId: createPublishingRecord
+      parameters:
+      - $ref: '#/components/parameters/ContentAssetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishingRecordCreate'
+      responses:
+        '201':
+          description: Publishing record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishingRecordResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    get:
+      tags:
+      - Publishing
+      operationId: listPublishingRecords
+      parameters:
+      - $ref: '#/components/parameters/ContentAssetId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Publishing records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishingRecordListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /publishing-records/{publishingRecordId}/metrics:
+    post:
+      tags:
+      - Publishing
+      operationId: createPerformanceSnapshot
+      parameters:
+      - name: publishingRecordId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetricsCreate'
+      responses:
+        '201':
+          description: Metrics snapshot
+        default:
+          $ref: '#/components/responses/Error'
+  /jobs/{jobId}:
+    get:
+      tags:
+      - Jobs
+      operationId: getJob
+      parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/magic-links:
+    post:
+      tags:
+      - Auth
+      operationId: requestMagicLink
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MagicLinkRequest'
+      responses:
+        '202':
+          description: Request accepted regardless of account existence
+        '429':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/magic-links/verify:
+    post:
+      tags:
+      - Auth
+      operationId: verifyMagicLink
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MagicLinkVerifyRequest'
+      responses:
+        '200':
+          description: Authenticated session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/session:
+    get:
+      tags:
+      - Auth
+      operationId: getSession
+      responses:
+        '200':
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /auth/logout:
+    post:
+      tags:
+      - Auth
+      operationId: logout
+      responses:
+        '204':
+          description: Session revoked
+        default:
+          $ref: '#/components/responses/Error'
+  /workspaces:
+    post:
+      tags:
+      - Workspace
+      operationId: createWorkspace
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceCreate'
+      responses:
+        '201':
+          description: Created workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /onboarding:
+    get:
+      tags:
+      - Onboarding
+      operationId: getOnboardingProgress
+      responses:
+        '200':
+          description: Onboarding progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingResponse'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      tags:
+      - Onboarding
+      operationId: updateOnboardingProgress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OnboardingUpdate'
+      responses:
+        '200':
+          description: Saved onboarding progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /columns/{columnId}/archive:
+    post:
+      tags:
+      - Columns
+      operationId: archiveColumn
+      parameters:
+      - $ref: '#/components/parameters/ColumnId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCommand'
+      responses:
+        '200':
+          description: Archived column
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColumnResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials/comments:
+    post:
+      tags:
+      - Materials
+      operationId: createCommentBatch
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentBatchCreate'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /materials/{materialId}/archive:
+    post:
+      tags:
+      - Materials
+      operationId: archiveMaterial
+      parameters:
+      - $ref: '#/components/parameters/MaterialId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCommand'
+      responses:
+        '200':
+          description: Archived material
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: ../schemas/material-item.schema.json
+        default:
+          $ref: '#/components/responses/Error'
+  /assets/{assetId}/hide:
+    post:
+      tags:
+      - Assets
+      operationId: hideAsset
+      parameters:
+      - $ref: '#/components/parameters/AssetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCommand'
+      responses:
+        '200':
+          description: Hidden asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /assets/{assetId}/similar:
+    get:
+      tags:
+      - Assets
+      operationId: listSimilarAssets
+      parameters:
+      - $ref: '#/components/parameters/AssetId'
+      - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Similar assets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /topic-sessions/{topicSessionId}/candidates:
+    get:
+      tags:
+      - Topics
+      operationId: listTopicCandidates
+      parameters:
+      - $ref: '#/components/parameters/TopicSessionId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Topic candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopicCandidateListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /topic-candidates/{topicCandidateId}/regenerate:
+    post:
+      tags:
+      - Topics
+      operationId: regenerateTopicCandidate
+      parameters:
+      - $ref: '#/components/parameters/TopicCandidateId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopicRegenerationRequest'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/timeline:
+    get:
+      tags:
+      - Content Runs
+      operationId: getContentRunTimeline
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Run timeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunTimelineResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/pause:
+    post:
+      tags:
+      - Content Runs
+      operationId: pauseContentRun
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200':
+          description: Pause requested
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentRunResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/approve-budget:
+    post:
+      tags:
+      - Content Runs
+      operationId: approveContentRunBudget
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BudgetApproval'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-assets/{contentAssetId}/regenerations/{regenerationId}/accept:
+    post:
+      tags:
+      - Content Runs
+      operationId: acceptContentRegeneration
+      parameters:
+      - $ref: '#/components/parameters/ContentAssetId'
+      - name: regenerationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionCommand'
+      responses:
+        '200':
+          description: Accepted regeneration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAsset'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-assets/{contentAssetId}/versions:
+    get:
+      tags:
+      - Content Runs
+      operationId: listContentAssetVersions
+      parameters:
+      - $ref: '#/components/parameters/ContentAssetId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Content asset versions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentAssetVersionListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-assets/{contentAssetId}/save-insight:
+    post:
+      tags:
+      - Content Runs
+      operationId: saveContentSelectionAsInsight
+      parameters:
+      - $ref: '#/components/parameters/ContentAssetId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveInsightRequest'
+      responses:
+        '201':
+          description: Created insight asset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /content-runs/{runId}/claims:
+    get:
+      tags:
+      - Claims
+      operationId: listRunClaims
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Claims
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /claims/{claimId}:
+    patch:
+      tags:
+      - Claims
+      operationId: updateClaim
+      parameters:
+      - $ref: '#/components/parameters/ClaimId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedPatch'
+      responses:
+        '200':
+          description: Updated claim
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /claims/{claimId}/sources:
+    post:
+      tags:
+      - Claims
+      operationId: addClaimSource
+      parameters:
+      - $ref: '#/components/parameters/ClaimId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimSourceCreate'
+      responses:
+        '201':
+          description: Added claim source
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /claims/{claimId}/sources/{claimSourceId}:
+    delete:
+      tags:
+      - Claims
+      operationId: deleteClaimSource
+      parameters:
+      - $ref: '#/components/parameters/ClaimId'
+      - $ref: '#/components/parameters/ClaimSourceId'
+      responses:
+        '204':
+          description: Claim source removed and review marked stale
+        default:
+          $ref: '#/components/responses/Error'
+  /artifacts/{artifactId}/validate:
+    post:
+      tags:
+      - Artifacts
+      operationId: validateArtifact
+      parameters:
+      - $ref: '#/components/parameters/ArtifactId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /artifacts/{artifactId}/preview-token:
+    get:
+      tags:
+      - Artifacts
+      operationId: getArtifactPreviewToken
+      parameters:
+      - $ref: '#/components/parameters/ArtifactId'
+      responses:
+        '200':
+          description: Short-lived preview token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewTokenResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /artifacts/{artifactId}/builds:
+    get:
+      tags:
+      - Artifacts
+      operationId: listArtifactBuilds
+      parameters:
+      - $ref: '#/components/parameters/ArtifactId'
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Artifact builds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactBuildListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /exports/{exportId}/refresh-download:
+    post:
+      tags:
+      - Exports
+      operationId: refreshExportDownload
+      parameters:
+      - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: Refreshed signed download URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /publishing-records/{publishingRecordId}:
+    patch:
+      tags:
+      - Publishing
+      operationId: updatePublishingRecord
+      parameters:
+      - $ref: '#/components/parameters/PublishingRecordId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionedPatch'
+      responses:
+        '200':
+          description: Updated publishing record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishingRecordResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        default:
+          $ref: '#/components/responses/Error'
+  /publishing-records/{publishingRecordId}/comments-import:
+    post:
+      tags:
+      - Publishing
+      operationId: importPublishingComments
+      parameters:
+      - $ref: '#/components/parameters/PublishingRecordId'
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentBatchCreate'
+      responses:
+        '202':
+          $ref: '#/components/responses/AcceptedJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /usage/current:
+    get:
+      tags:
+      - Usage
+      operationId: getCurrentUsage
+      responses:
+        '200':
+          description: Current workspace usage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /usage/by-run/{runId}:
+    get:
+      tags:
+      - Usage
+      operationId: getRunUsage
+      parameters:
+      - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Run usage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /audit-logs:
+    get:
+      tags:
+      - Audit
+      operationId: listAuditLogs
+      parameters:
+      - $ref: '#/components/parameters/Limit'
+      - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogListResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /health/live:
+    servers:
+    - url: /
+    get:
+      tags:
+      - Operations
+      operationId: getLiveness
+      security: []
+      responses:
+        '200':
+          description: Process is alive; no dependency checks are performed
+          content:
+            application/json:
+              schema: &id001
+                type: object
+                additionalProperties: false
+                required:
+                - status
+                - checkedAt
+                properties:
+                  status:
+                    type: string
+                    enum:
+                    - ok
+                    - degraded
+                    - unavailable
+                  checkedAt:
+                    type: string
+                    format: date-time
+                  dependencies:
+                    type: object
+                    additionalProperties:
+                      type: string
+                      enum:
+                      - ok
+                      - unavailable
+                      - not_checked
+  /health/ready:
+    servers:
+    - url: /
+    get:
+      tags:
+      - Operations
+      operationId: getReadiness
+      security: []
+      responses:
+        '200':
+          description: Required dependencies are available; paid model APIs are not called
+          content:
+            application/json:
+              schema: *id001
+        '503':
+          description: One or more required dependencies are unavailable
+          content:
+            application/json:
+              schema: *id001
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: serialos_session
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 200
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    ColumnId:
+      name: columnId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MaterialId:
+      name: materialId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AssetId:
+      name: assetId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TopicCandidateId:
+      name: topicCandidateId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ContentAssetId:
+      name: contentAssetId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TopicSessionId:
+      name: topicSessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ClaimId:
+      name: claimId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ClaimSourceId:
+      name: claimSourceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ArtifactId:
+      name: artifactId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ExportId:
+      name: exportId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PublishingRecordId:
+      name: publishingRecordId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    Conflict:
+      description: Version or idempotency conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    AcceptedJob:
+      description: Accepted asynchronous job
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JobResponse'
+  schemas:
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required:
+          - code
+          - message
+          - requestId
+          - retryable
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            requestId:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+            retryable:
+              type: boolean
+    Page:
+      type: object
+      required:
+      - hasMore
+      properties:
+        nextCursor:
+          type:
+          - string
+          - 'null'
+        hasMore:
+          type: boolean
+    PrivacyLevel:
+      enum:
+      - public_usable
+      - internal_reference
+      - do_not_quote
+    Workspace:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - slug
+      - locale
+      - timezone
+      - onboardingStatus
+      - status
+      - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        locale:
+          type: string
+        timezone:
+          type: string
+        onboardingStatus:
+          type: string
+        status:
+          type: string
+        settings:
+          type: object
+          additionalProperties: true
+        version:
+          type: integer
+    WorkspaceResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Workspace'
+    WorkspaceUpdate:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - patch
+      properties:
+        version:
+          type: integer
+        patch:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+            locale:
+              type: string
+            timezone:
+              type: string
+    ColumnCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - promise
+      - audience
+      - topics
+      - excludedTopics
+      - defaultFormats
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        promise:
+          type: string
+          minLength: 1
+          maxLength: 500
+        audience:
+          type: object
+          additionalProperties: true
+        topics:
+          type: array
+          items:
+            type: string
+        excludedTopics:
+          type: array
+          items:
+            type: string
+        defaultFormats:
+          type: array
+          items:
+            type: string
+        structureTemplate:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        cadence:
+          type: string
+    Column:
+      allOf:
+      - $ref: '#/components/schemas/ColumnCreate'
+      - type: object
+        required:
+        - id
+        - version
+        - status
+        properties:
+          id:
+            type: string
+            format: uuid
+          version:
+            type: integer
+          status:
+            type: string
+    ColumnResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Column'
+    ColumnListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Column'
+        page:
+          $ref: '#/components/schemas/Page'
+    UploadCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - fileName
+      - mediaType
+      - sizeBytes
+      - sha256
+      - privacyLevel
+      - isPersonalExperience
+      properties:
+        fileName:
+          type: string
+          maxLength: 255
+        mediaType:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 1
+        sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        privacyLevel:
+          $ref: '#/components/schemas/PrivacyLevel'
+        isPersonalExperience:
+          type: boolean
+        title:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+    UploadSessionResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - materialId
+          - uploadUrl
+          - objectKey
+          - expiresAt
+          properties:
+            materialId:
+              type: string
+              format: uuid
+            uploadUrl:
+              type: string
+              format: uri
+            objectKey:
+              type: string
+            expiresAt:
+              type: string
+              format: date-time
+            headers:
+              type: object
+              additionalProperties:
+                type: string
+    MaterialJobResponse:
+      allOf:
+      - $ref: '#/components/schemas/JobResponse'
+      - type: object
+        properties:
+          data:
+            type: object
+            properties:
+              materialId:
+                type: string
+                format: uuid
+              jobId:
+                type: string
+                format: uuid
+              status:
+                type: string
+              statusUrl:
+                type: string
+    MaterialListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: ../schemas/material-item.schema.json
+        page:
+          $ref: '#/components/schemas/Page'
+    Asset:
+      type: object
+      additionalProperties: true
+      required:
+      - id
+      - type
+      - title
+      - statement
+      - confirmation
+      - privacy
+      - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        title:
+          type: string
+        statement:
+          type: string
+        confirmation:
+          type: string
+        privacy:
+          $ref: '#/components/schemas/PrivacyLevel'
+        version:
+          type: integer
+    AssetResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Asset'
+    AssetListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asset'
+        page:
+          $ref: '#/components/schemas/Page'
+    TopicSessionCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - columnId
+      - preferUnusedAssets
+      - allowWebResearch
+      - formats
+      - excludedTopics
+      properties:
+        columnId:
+          type: string
+          format: uuid
+        audienceId:
+          type: string
+        materialDateRange:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date-time
+            to:
+              type: string
+              format: date-time
+        preferUnusedAssets:
+          type: boolean
+        allowWebResearch:
+          type: boolean
+        formats:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        excludedTopics:
+          type: array
+          items:
+            type: string
+    ContentRunCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - topicCandidateId
+      - columnId
+      - formats
+      - budget
+      - generateArtifact
+      properties:
+        topicCandidateId:
+          type: string
+          format: uuid
+        columnId:
+          type: string
+          format: uuid
+        formats:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        lengthPreference:
+          type: string
+        allowWebResearch:
+          type: boolean
+        generateArtifact:
+          type: boolean
+        artifactType:
+          enum:
+          - auto
+          - none
+          - calculator
+          - quiz
+          - checklist
+        budget:
+          type: object
+          required:
+          - softUsd
+          - hardUsd
+          properties:
+            softUsd:
+              type: string
+              pattern: ^[0-9]+(\.[0-9]{1,6})?$
+            hardUsd:
+              type: string
+              pattern: ^[0-9]+(\.[0-9]{1,6})?$
+    ContentRun:
+      type: object
+      required:
+      - id
+      - status
+      - config
+      - budget
+      - actualCost
+      - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          enum:
+          - draft
+          - queued
+          - collecting_context
+          - needs_input
+          - needs_budget_approval
+          - briefing
+          - generating
+          - building_artifact
+          - quality_check
+          - in_review
+          - approved
+          - exported
+          - paused
+          - cancel_requested
+          - failed
+          - canceled
+        activeStep:
+          type:
+          - string
+          - 'null'
+        config:
+          type: object
+          additionalProperties: true
+        budget:
+          type: object
+          additionalProperties: true
+        estimatedCost:
+          type: string
+        actualCost:
+          type: string
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ContentRunResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/ContentRun'
+    ContentRunListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentRun'
+        page:
+          $ref: '#/components/schemas/Page'
+    InterviewQuestion:
+      type: object
+      required:
+      - id
+      - ordinal
+      - question
+      - rationale
+      - targetGap
+      - required
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        ordinal:
+          type: integer
+        question:
+          type: string
+        rationale:
+          type: string
+        targetGap:
+          type: string
+        required:
+          type: boolean
+        status:
+          type: string
+        answer:
+          type:
+          - string
+          - 'null'
+    ContentAsset:
+      type: object
+      required:
+      - id
+      - runId
+      - type
+      - title
+      - status
+      - version
+      - body
+      properties:
+        id:
+          type: string
+          format: uuid
+        runId:
+          type: string
+          format: uuid
+        type:
+          enum:
+          - master_article
+          - video_script
+          - carousel
+          - short_video
+          - micro_post
+          - shot_list
+        title:
+          type: string
+        status:
+          enum:
+          - draft
+          - needs_review
+          - approved
+          - exported
+          - published_recorded
+          - deleted
+        version:
+          type: integer
+        body:
+          type: string
+        structuredBody:
+          type: object
+          additionalProperties: true
+        sourceMap:
+          type: object
+          additionalProperties: true
+        approvedVersionId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+    RegenerationRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - selection
+      - instruction
+      - preserve
+      properties:
+        version:
+          type: integer
+        selection:
+          type: object
+          required:
+          - start
+          - end
+          properties:
+            start:
+              type: integer
+              minimum: 0
+            end:
+              type: integer
+              minimum: 1
+        instruction:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        preserve:
+          type: object
+          required:
+          - facts
+          - structure
+          - voice
+          properties:
+            facts:
+              type: boolean
+            structure:
+              type: boolean
+            voice:
+              type: boolean
+    ApprovalResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - id
+          - contentRunId
+          - checksum
+          - createdAt
+          properties:
+            id:
+              type: string
+              format: uuid
+            contentRunId:
+              type: string
+              format: uuid
+            checksum:
+              type: string
+            createdAt:
+              type: string
+              format: date-time
+    ExportCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - contentRunId
+      - format
+      - includeSources
+      - includeQualityReport
+      - includeArtifact
+      - draft
+      properties:
+        contentRunId:
+          type: string
+          format: uuid
+        format:
+          enum:
+          - zip
+          - markdown
+          - json
+          - static_html
+        includeSources:
+          type: boolean
+        includeQualityReport:
+          type: boolean
+        includeArtifact:
+          type: boolean
+        draft:
+          type: boolean
+    Export:
+      type: object
+      required:
+      - id
+      - contentRunId
+      - format
+      - status
+      - draft
+      - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        contentRunId:
+          type: string
+          format: uuid
+        format:
+          type: string
+        status:
+          enum:
+          - queued
+          - building
+          - ready
+          - failed
+          - expired
+          - deleted
+        draft:
+          type: boolean
+        downloadUrl:
+          type:
+          - string
+          - 'null'
+          format: uri
+        expiresAt:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    ExportResponse:
+      type: object
+      properties:
+        data:
+          $ref: '#/components/schemas/Export'
+    ExportListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Export'
+        page:
+          $ref: '#/components/schemas/Page'
+    PublishingRecordCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - contentAssetVersionId
+      - platform
+      - url
+      - title
+      - publishedAt
+      properties:
+        contentAssetVersionId:
+          type: string
+          format: uuid
+        platform:
+          type: string
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+          maxLength: 300
+        publishedAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          maxLength: 3000
+    PublishingRecordResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+    MetricsCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - capturedAt
+      - metrics
+      properties:
+        capturedAt:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          additionalProperties:
+            type: number
+            minimum: 0
+        notes:
+          type: string
+          maxLength: 3000
+    Job:
+      type: object
+      required:
+      - jobId
+      - status
+      - statusUrl
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        resourceId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        status:
+          enum:
+          - queued
+          - running
+          - retry_scheduled
+          - succeeded
+          - failed
+          - dead_letter
+          - canceled
+        progress:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        currentStep:
+          type:
+          - string
+          - 'null'
+        userMessage:
+          type:
+          - string
+          - 'null'
+        errorCode:
+          type:
+          - string
+          - 'null'
+        retryable:
+          type: boolean
+        statusUrl:
+          type: string
+    JobResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Job'
+    MagicLinkRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        returnTo:
+          type: string
+          maxLength: 500
+    MagicLinkVerifyRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - token
+      properties:
+        token:
+          type: string
+          minLength: 20
+          maxLength: 500
+    Session:
+      type: object
+      additionalProperties: false
+      required:
+      - userId
+      - email
+      - expiresAt
+      - workspace
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type:
+          - string
+          - 'null'
+        expiresAt:
+          type: string
+          format: date-time
+        workspace:
+          oneOf:
+          - $ref: '#/components/schemas/Workspace'
+          - type: 'null'
+    SessionResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/Session'
+    WorkspaceCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - slug
+      - locale
+      - timezone
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        slug:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9-]{1,62}$
+        locale:
+          type: string
+          default: zh-CN
+        timezone:
+          type: string
+    OnboardingProgress:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - currentStep
+      - version
+      - data
+      - updatedAt
+      properties:
+        status:
+          enum:
+          - not_started
+          - in_progress
+          - completed
+        currentStep:
+          type: integer
+          minimum: 1
+          maximum: 6
+        version:
+          type: integer
+          minimum: 1
+        data:
+          type: object
+          additionalProperties: true
+        postponedColumn:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+    OnboardingResponse:
+      type: object
+      required:
+      - data
+      properties:
+        data:
+          $ref: '#/components/schemas/OnboardingProgress'
+    OnboardingUpdate:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - currentStep
+      - patch
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        currentStep:
+          type: integer
+          minimum: 1
+          maximum: 6
+        patch:
+          type: object
+          additionalProperties: true
+        complete:
+          type: boolean
+          default: false
+        postponeColumn:
+          type: boolean
+          default: false
+    VersionCommand:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      properties:
+        version:
+          type: integer
+          minimum: 1
+    VersionedPatch:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - patch
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        patch:
+          type: object
+          additionalProperties: true
+    CommentBatchCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      properties:
+        mode:
+          enum:
+          - paste
+          - rows
+          - csv_upload
+        text:
+          type: string
+          maxLength: 500000
+        rows:
+          type: array
+          maxItems: 10000
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - body
+            properties:
+              body:
+                type: string
+                minLength: 1
+                maxLength: 20000
+              authorKey:
+                type: string
+                maxLength: 200
+              platform:
+                type: string
+                maxLength: 100
+              publishedAt:
+                type:
+                - string
+                - 'null'
+                format: date-time
+              engagement:
+                type:
+                - integer
+                - 'null'
+                minimum: 0
+        uploadMaterialId:
+          type: string
+          format: uuid
+        privacyLevel:
+          $ref: '#/components/schemas/PrivacyLevel'
+        publishingRecordId:
+          type:
+          - string
+          - 'null'
+          format: uuid
+    TopicCandidateListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: ../schemas/topic-candidate.schema.json
+        page:
+          $ref: '#/components/schemas/Page'
+    TopicRegenerationRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - instruction
+      - hardBudgetUsd
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        instruction:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        hardBudgetUsd:
+          type: string
+          pattern: ^[0-9]+(\.[0-9]{1,6})?$
+    BudgetApproval:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - hardUsd
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        softUsd:
+          type: string
+          pattern: ^[0-9]+(\.[0-9]{1,6})?$
+        hardUsd:
+          type: string
+          pattern: ^[0-9]+(\.[0-9]{1,6})?$
+        reduceFormats:
+          type: array
+          items:
+            type: string
+    RunTimelineResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - run
+          - steps
+          properties:
+            run:
+              $ref: '#/components/schemas/ContentRun'
+            steps:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+    ContentAssetVersionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        page:
+          $ref: '#/components/schemas/Page'
+    SaveInsightRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - selection
+      - type
+      - title
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        selection:
+          type: object
+          required:
+          - start
+          - end
+          properties:
+            start:
+              type: integer
+              minimum: 0
+            end:
+              type: integer
+              minimum: 1
+        type:
+          enum:
+          - opinion
+          - story
+          - case
+          - fact
+          - framework
+          - metaphor
+          - audience_question
+          - quote
+          - contrarian_point
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        confirm:
+          type: boolean
+          default: false
+    ClaimResponse:
+      type: object
+      properties:
+        data:
+          $ref: ../schemas/source-claim.schema.json
+    ClaimListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: ../schemas/source-claim.schema.json
+        page:
+          $ref: '#/components/schemas/Page'
+    ClaimSourceCreate:
+      type: object
+      additionalProperties: false
+      required:
+      - sourceType
+      - sourceId
+      - relationship
+      properties:
+        sourceType:
+          enum:
+          - material
+          - insight_asset
+          - source_document
+          - interview_answer
+          - system_calculation
+        sourceId:
+          type: string
+          format: uuid
+        relationship:
+          enum:
+          - supports
+          - partially_supports
+          - contradicts
+          - context_only
+        excerpt:
+          type: string
+          maxLength: 2000
+    PreviewTokenResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - token
+          - expiresAt
+          - previewUrl
+          properties:
+            token:
+              type: string
+            expiresAt:
+              type: string
+              format: date-time
+            previewUrl:
+              type: string
+              format: uri-reference
+    ArtifactBuildListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        page:
+          $ref: '#/components/schemas/Page'
+    PublishingRecordListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        page:
+          $ref: '#/components/schemas/Page'
+    UsageResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          required:
+          - estimatedCostUsd
+          - actualCostUsd
+          - aiCalls
+          properties:
+            estimatedCostUsd:
+              type: string
+            actualCostUsd:
+              type: string
+            aiCalls:
+              type: integer
+              minimum: 0
+            tokens:
+              type: object
+              additionalProperties:
+                type: integer
+                minimum: 0
+            byModel:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+    AuditLogListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - action
+            - resourceType
+            - createdAt
+            properties:
+              id:
+                type: string
+                format: uuid
+              action:
+                type: string
+              resourceType:
+                type: string
+              resourceId:
+                type:
+                - string
+                - 'null'
+                format: uuid
+              actorType:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+              summary:
+                type: object
+                additionalProperties: true
+        page:
+          $ref: '#/components/schemas/Page'

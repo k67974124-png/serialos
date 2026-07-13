@@ -1,0 +1,49 @@
+{
+  "sessionId": "44444444-4444-4444-8444-444444444444",
+  "candidates": [
+    {
+      "title": "AI 没让我更早下班，只是把工作切得更碎",
+      "thesis": "衡量 AI 效率时，必须把提示、检查和返工纳入总成本。",
+      "audience": "已经在工作中使用 AI、但没有系统复盘投入产出的知识工作者",
+      "whyNow": "素材库中已有一段明确的个人复盘，并能延展成可计算的方法。",
+      "sourceAssetIds": [
+        "55555555-5555-4555-8555-555555555555",
+        "66666666-6666-4666-8666-666666666666"
+      ],
+      "scores": {
+        "personalRelevance": 95,
+        "novelty": 78,
+        "audienceValue": 90,
+        "evidenceStrength": 82,
+        "seriality": 88,
+        "artifactPotential": 94
+      },
+      "scoreReasons": {
+        "personalRelevance": "来自创作者明确记录的工作体验。",
+        "artifactPotential": "适合制作时间回报率计算器。"
+      },
+      "overallScore": 88,
+      "gaps": [
+        "需要补充一个具体任务的前后耗时"
+      ],
+      "risks": [
+        "不能把单次体验外推到所有岗位"
+      ],
+      "similarContent": [
+        {
+          "contentAssetId": "77777777-7777-4777-8777-777777777777",
+          "title": "我停掉了三个 AI 订阅",
+          "similarity": 0.42,
+          "differenceAngle": "本期聚焦时间结构，而不是订阅成本。"
+        }
+      ],
+      "serialDirections": [
+        "哪些任务最适合交给 AI",
+        "新手为什么用了 AI 反而更慢"
+      ],
+      "artifactSuggestion": "calculator",
+      "artifactRationale": "让读者输入提示、检查和返工时间，看到净节省。"
+    }
+  ],
+  "insufficiencyReason": null
+}

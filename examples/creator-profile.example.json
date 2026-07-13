@@ -1,0 +1,73 @@
+{
+  "displayName": "林舟",
+  "positioning": "用可复现的小实验，研究 AI 进入普通工作后的真实收益与代价。",
+  "domains": [
+    "AI工作流",
+    "产品管理"
+  ],
+  "goals": [
+    "influence",
+    "teaching"
+  ],
+  "audiences": [
+    {
+      "id": "product-builders",
+      "name": "需要落地 AI 的产品与运营从业者",
+      "situation": "已经尝试多种 AI 工具，但无法判断真实投入产出。",
+      "pains": [
+        "工具选择过多",
+        "难以验证结果质量"
+      ],
+      "desiredOutcomes": [
+        "建立可复用工作流",
+        "减少无效订阅"
+      ],
+      "knowledgeLevel": "mixed",
+      "avoidTerms": [
+        "颠覆一切"
+      ]
+    }
+  ],
+  "voice": {
+    "traits": [
+      "克制",
+      "具体",
+      "带实验感"
+    ],
+    "sentenceStyle": "短句为主，先展示观察，再给出有边界的结论。",
+    "narrativePatterns": [
+      "真实任务开场",
+      "过程与数据",
+      "反例",
+      "适用边界"
+    ],
+    "preferredPhrases": [
+      "这次实验说明",
+      "先看代价"
+    ],
+    "bannedPhrases": [
+      "震惊",
+      "普通人一定要看"
+    ],
+    "evidenceStyle": "个人经历要标明样本边界，外部事实必须给出来源。"
+  },
+  "boundaries": {
+    "privateTopics": [
+      "未公开客户名称"
+    ],
+    "redactionRules": [
+      "客户和同事名称使用角色代称"
+    ],
+    "prohibitedClaims": [
+      "不得承诺工具一定提升生产力"
+    ]
+  },
+  "confidence": 0.91,
+  "evidence": [
+    {
+      "fieldPath": "positioning",
+      "sourceId": "11111111-1111-4111-8111-111111111111",
+      "reason": "历史内容多次围绕 AI 工作实验展开。"
+    }
+  ]
+}

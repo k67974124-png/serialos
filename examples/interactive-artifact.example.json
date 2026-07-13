@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0",
+  "type": "calculator",
+  "title": "AI 时间回报率计算器",
+  "description": "把提示、等待、检查和返工计入总成本，计算每周净节省时间。",
+  "privacyNotice": "计算在浏览器中完成，不上传输入值。",
+  "theme": {
+    "density": "comfortable",
+    "radius": "medium"
+  },
+  "share": {
+    "titleTemplate": "我的 AI 时间回报率",
+    "bodyTemplate": "算完后，我每周净节省 {{weekly_net_minutes}} 分钟。"
+  },
+  "fields": [
+    {
+      "id": "manual_minutes",
+      "label": "原任务耗时",
+      "helpText": "不使用 AI 时完成一次任务的分钟数。",
+      "type": "number",
+      "required": true,
+      "unit": "分钟",
+      "min": 0,
+      "max": 10000,
+      "step": 1,
+      "default": 60
+    },
+    {
+      "id": "ai_minutes",
+      "label": "AI 流程总耗时",
+      "helpText": "包含提示、等待、检查和返工。",
+      "type": "number",
+      "required": true,
+      "unit": "分钟",
+      "min": 0,
+      "max": 10000,
+      "step": 1,
+      "default": 45
+    },
+    {
+      "id": "weekly_uses",
+      "label": "每周使用次数",
+      "type": "number",
+      "required": true,
+      "unit": "次",
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "default": 5
+    }
+  ],
+  "computedValues": [
+    {
+      "id": "weekly_net_minutes",
+      "formula": "(manual_minutes - ai_minutes) * weekly_uses",
+      "label": "每周净节省",
+      "unit": "分钟",
+      "precision": 0
+    }
+  ],
+  "resultRules": [
+    {
+      "id": "positive",
+      "when": "weekly_net_minutes > 0",
+      "title": "这条工作流有正收益",
+      "body": "在当前输入下，它每周能节省时间。继续观察结果质量和稳定性。",
+      "recommendations": [
+        "连续记录四周，避免被单次体验误导。"
+      ]
+    },
+    {
+      "id": "non_positive",
+      "when": "weekly_net_minutes <= 0",
+      "title": "这条工作流暂时没有时间收益",
+      "body": "检查提示、验收或返工环节，或停止在该任务上使用。",
+      "recommendations": [
+        "先优化最耗时的一步。"
+      ]
+    }
+  ]
+}

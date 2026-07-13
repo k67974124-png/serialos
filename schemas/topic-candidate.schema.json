@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serialos.local/schemas/topic-candidate.schema.json",
+  "title": "TopicCandidates",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sessionId",
+    "candidates",
+    "insufficiencyReason"
+  ],
+  "properties": {
+    "sessionId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "thesis",
+          "audience",
+          "whyNow",
+          "sourceAssetIds",
+          "scores",
+          "overallScore",
+          "gaps",
+          "risks",
+          "similarContent",
+          "serialDirections",
+          "artifactSuggestion"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 100
+          },
+          "thesis": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "audience": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "whyNow": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "sourceAssetIds": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "uniqueItems": true
+          },
+          "scores": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "personalRelevance",
+              "novelty",
+              "audienceValue",
+              "evidenceStrength",
+              "seriality",
+              "artifactPotential"
+            ],
+            "properties": {
+              "personalRelevance": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "novelty": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "audienceValue": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "evidenceStrength": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "seriality": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "artifactPotential": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            }
+          },
+          "scoreReasons": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 400
+            }
+          },
+          "overallScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "gaps": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "maxLength": 300
+            }
+          },
+          "risks": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "maxLength": 300
+            }
+          },
+          "similarContent": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "contentAssetId",
+                "title",
+                "similarity",
+                "differenceAngle"
+              ],
+              "properties": {
+                "contentAssetId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "similarity": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "differenceAngle": {
+                  "type": "string",
+                  "maxLength": 500
+                }
+              }
+            }
+          },
+          "serialDirections": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "artifactSuggestion": {
+            "enum": [
+              "none",
+              "calculator",
+              "quiz",
+              "checklist"
+            ]
+          },
+          "artifactRationale": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "insufficiencyReason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1000
+    }
+  }
+}

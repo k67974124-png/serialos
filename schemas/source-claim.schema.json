@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serialos.local/schemas/source-claim.schema.json",
+  "title": "ClaimLedger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contentAssetVersionId",
+    "claims"
+  ],
+  "properties": {
+    "contentAssetVersionId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "claims": {
+      "type": "array",
+      "maxItems": 300,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claimText",
+          "claimType",
+          "supportStatus",
+          "startOffset",
+          "endOffset",
+          "riskLevel",
+          "sources",
+          "notes"
+        ],
+        "properties": {
+          "claimText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "claimType": {
+            "enum": [
+              "external_fact",
+              "personal_experience",
+              "opinion",
+              "inference",
+              "recommendation",
+              "quote"
+            ]
+          },
+          "supportStatus": {
+            "enum": [
+              "supported",
+              "weak",
+              "conflicting",
+              "unsupported",
+              "not_applicable"
+            ]
+          },
+          "startOffset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "endOffset": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "riskLevel": {
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "sources": {
+            "type": "array",
+            "maxItems": 10,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "sourceType",
+                "sourceId",
+                "relationship",
+                "excerpt"
+              ],
+              "properties": {
+                "sourceType": {
+                  "enum": [
+                    "material",
+                    "insight_asset",
+                    "source_document",
+                    "interview_answer",
+                    "system_calculation",
+                    "model_suggestion"
+                  ]
+                },
+                "sourceId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "relationship": {
+                  "enum": [
+                    "supports",
+                    "partially_supports",
+                    "contradicts",
+                    "context_only"
+                  ]
+                },
+                "excerpt": {
+                  "type": "string",
+                  "maxLength": 1000
+                }
+              }
+            }
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      }
+    }
+  }
+}

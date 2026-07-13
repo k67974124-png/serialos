@@ -1,0 +1,44 @@
+{
+  "runId": "44444444-4444-4444-8444-444444444444",
+  "briefVersion": 1,
+  "assets": [
+    {
+      "type": "master_article",
+      "title": "AI 没让我更早下班，只是把工作切得更碎",
+      "body": "我原本以为 AI 会直接替我省下时间。复盘后才发现，提示、检查和返工组成了另一张账单。",
+      "structuredBody": {
+        "blocks": [
+          {
+            "type": "paragraph",
+            "text": "我原本以为 AI 会直接替我省下时间。"
+          }
+        ]
+      },
+      "sourceAssetIds": [
+        "55555555-5555-4555-8555-555555555555",
+        "66666666-6666-4666-8666-666666666666"
+      ],
+      "sourceDocumentIds": [
+        "11111111-1111-4111-8111-111111111111"
+      ],
+      "estimatedReadingMinutes": 6,
+      "estimatedDurationSeconds": null,
+      "channelIntent": "完整论证并引导读者使用计算器"
+    }
+  ],
+  "sourceIds": [
+    "11111111-1111-4111-8111-111111111111",
+    "22222222-2222-4222-8222-222222222222",
+    "55555555-5555-4555-8555-555555555555",
+    "66666666-6666-4666-8666-666666666666"
+  ],
+  "generationSummary": {
+    "usedPersonalMaterials": 1,
+    "knownLimitations": [
+      "只有单个创作者样本。"
+    ],
+    "requiresUserConfirmation": [
+      "确认是否公开“没有明显提前下班”的个人判断。"
+    ]
+  }
+}

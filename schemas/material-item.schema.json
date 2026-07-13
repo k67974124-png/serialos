@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serialos.local/schemas/material-item.schema.json",
+  "title": "MaterialItem",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "title",
+    "status",
+    "privacyLevel",
+    "createdAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "type": {
+      "enum": [
+        "text",
+        "markdown",
+        "audio",
+        "pdf",
+        "docx",
+        "image",
+        "url",
+        "comments"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "status": {
+      "enum": [
+        "uploaded",
+        "processing",
+        "ready_for_enrichment",
+        "ready",
+        "needs_review",
+        "failed",
+        "archived",
+        "deleting",
+        "deleted"
+      ]
+    },
+    "privacyLevel": {
+      "enum": [
+        "public_usable",
+        "internal_reference",
+        "do_not_quote"
+      ]
+    },
+    "isPersonalExperience": {
+      "type": "boolean",
+      "default": false
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 20
+    },
+    "normalizedText": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1000000
+    },
+    "sourceUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      },
+      "uniqueItems": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  }
+}

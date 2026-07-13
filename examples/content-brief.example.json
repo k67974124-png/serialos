@@ -1,0 +1,118 @@
+{
+  "topicId": "44444444-4444-4444-8444-444444444444",
+  "columnId": "88888888-8888-4888-8888-888888888888",
+  "audience": "已经使用 AI 工具、但没有计算完整时间成本的知识工作者",
+  "oneSentencePromise": "帮助读者用一套可计算的方法判断某项 AI 工作流是否真的节省时间。",
+  "thesis": "只有把提示、等待、检查和返工纳入总成本，AI 效率才不是一张漂亮但漏水的账单。",
+  "objectives": [
+    "解释隐藏协调成本",
+    "提供可复用的计算方法"
+  ],
+  "keyPoints": [
+    {
+      "point": "执行时间下降不等于总时间下降。",
+      "purpose": "建立核心冲突",
+      "assetIds": [
+        "55555555-5555-4555-8555-555555555555"
+      ],
+      "sourceIds": [
+        "11111111-1111-4111-8111-111111111111"
+      ]
+    },
+    {
+      "point": "计算净收益要纳入提示、检查、返工和使用频次。",
+      "purpose": "给出可操作方法",
+      "assetIds": [
+        "66666666-6666-4666-8666-666666666666"
+      ],
+      "sourceIds": [
+        "22222222-2222-4222-8222-222222222222"
+      ]
+    }
+  ],
+  "structure": [
+    {
+      "id": "opening",
+      "heading": "为什么没有更早下班",
+      "purpose": "用真实反差进入主题",
+      "keyPointIndexes": [
+        0
+      ]
+    },
+    {
+      "id": "cost_model",
+      "heading": "一张完整的时间账单",
+      "purpose": "解释计算框架",
+      "keyPointIndexes": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": "action",
+      "heading": "给自己的工作流算一次",
+      "purpose": "引导读者使用工具并限定结论",
+      "keyPointIndexes": [
+        1
+      ]
+    }
+  ],
+  "mustUseAssets": [
+    "55555555-5555-4555-8555-555555555555",
+    "66666666-6666-4666-8666-666666666666"
+  ],
+  "mustAvoid": [
+    "不得补造具体节省小时数",
+    "不得把个人体验写成普遍规律"
+  ],
+  "claimPlan": [
+    {
+      "claimType": "personal_experience",
+      "plannedClaim": "创作者使用 AI 后没有明显提前下班。",
+      "requiredSourceIds": [
+        "11111111-1111-4111-8111-111111111111"
+      ]
+    },
+    {
+      "claimType": "recommendation",
+      "plannedClaim": "计算净收益时应纳入检查和返工。",
+      "requiredSourceIds": [
+        "22222222-2222-4222-8222-222222222222"
+      ]
+    }
+  ],
+  "formatPlans": {
+    "masterArticle": {
+      "enabled": true,
+      "purpose": "完整解释计算框架",
+      "audienceAction": "完成一次自测",
+      "constraints": [
+        "不超过 2500 字"
+      ]
+    },
+    "videoScript": {
+      "enabled": true,
+      "purpose": "呈现实验冲突和计算过程",
+      "audienceAction": "评论自己的最大隐性成本",
+      "constraints": [
+        "5 分钟内"
+      ]
+    },
+    "carousel": {
+      "enabled": true,
+      "purpose": "把公式拆成易保存的步骤",
+      "audienceAction": "收藏并自查",
+      "constraints": [
+        "8 页"
+      ]
+    }
+  },
+  "knownLimitations": [
+    "当前只有单个创作者的定性经验，没有跨行业样本。"
+  ],
+  "artifact": {
+    "type": "calculator",
+    "rationale": "主题包含明确的时间变量和可重复公式。",
+    "userValue": "读者可以得到每周净节省时间和是否值得继续使用的提示。"
+  }
+}

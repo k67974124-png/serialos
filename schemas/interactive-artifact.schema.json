@@ -1,0 +1,542 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serialos.local/schemas/interactive-artifact.schema.json",
+  "title": "InteractiveArtifact",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/calculator"
+    },
+    {
+      "$ref": "#/$defs/quiz"
+    },
+    {
+      "$ref": "#/$defs/checklist"
+    }
+  ],
+  "$defs": {
+    "base": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "type",
+        "title",
+        "description",
+        "privacyNotice",
+        "theme",
+        "share"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "type": {
+          "enum": [
+            "calculator",
+            "quiz",
+            "checklist"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "privacyNotice": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "theme": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "density",
+            "radius"
+          ],
+          "properties": {
+            "density": {
+              "enum": [
+                "compact",
+                "comfortable"
+              ]
+            },
+            "radius": {
+              "enum": [
+                "small",
+                "medium",
+                "large"
+              ]
+            }
+          }
+        },
+        "share": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "titleTemplate",
+            "bodyTemplate"
+          ],
+          "properties": {
+            "titleTemplate": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "bodyTemplate": {
+              "type": "string",
+              "maxLength": 500
+            }
+          }
+        }
+      }
+    },
+    "calculatorField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "type",
+        "required"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "helpText": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "type": {
+          "enum": [
+            "number",
+            "range",
+            "select",
+            "boolean"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "default": {
+          "type": [
+            "number",
+            "boolean",
+            "string",
+            "null"
+          ]
+        },
+        "options": {
+          "type": "array",
+          "maxItems": 30,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "value"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "string",
+                  "boolean"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "resultRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "when",
+        "title",
+        "body"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "when": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "recommendations": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    },
+    "calculator": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {},
+            "type": {
+              "const": "calculator"
+            },
+            "title": {},
+            "description": {},
+            "privacyNotice": {},
+            "theme": {},
+            "share": {},
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "$ref": "#/$defs/calculatorField"
+              }
+            },
+            "computedValues": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "formula",
+                  "label"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                  },
+                  "formula": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "unit": {
+                    "type": "string",
+                    "maxLength": 30
+                  },
+                  "precision": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 6
+                  }
+                }
+              }
+            },
+            "resultRules": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "$ref": "#/$defs/resultRule"
+              }
+            }
+          },
+          "required": [
+            "fields",
+            "computedValues",
+            "resultRules"
+          ]
+        }
+      ]
+    },
+    "quizQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "prompt",
+        "type",
+        "options"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "helpText": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "type": {
+          "enum": [
+            "single_choice",
+            "multiple_choice",
+            "scale"
+          ]
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "score"
+            ],
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 150
+              },
+              "score": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 80
+              }
+            }
+          }
+        }
+      }
+    },
+    "quiz": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {},
+            "type": {
+              "const": "quiz"
+            },
+            "title": {},
+            "description": {},
+            "privacyNotice": {},
+            "theme": {},
+            "share": {},
+            "questions": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 30,
+              "items": {
+                "$ref": "#/$defs/quizQuestion"
+              }
+            },
+            "results": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "minScore",
+                  "maxScore",
+                  "title",
+                  "body"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                  },
+                  "minScore": {
+                    "type": "number"
+                  },
+                  "maxScore": {
+                    "type": "number"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 150
+                  },
+                  "body": {
+                    "type": "string",
+                    "maxLength": 1500
+                  },
+                  "recommendations": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "string",
+                      "maxLength": 300
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": [
+            "questions",
+            "results"
+          ]
+        }
+      ]
+    },
+    "checklistItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "required",
+        "weight"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,39}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "checklist": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schemaVersion": {},
+            "type": {
+              "const": "checklist"
+            },
+            "title": {},
+            "description": {},
+            "privacyNotice": {},
+            "theme": {},
+            "share": {},
+            "groups": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "title",
+                  "items"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "maxLength": 150
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 30,
+                    "items": {
+                      "$ref": "#/$defs/checklistItem"
+                    }
+                  }
+                }
+              }
+            },
+            "resultRules": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": {
+                "$ref": "#/$defs/resultRule"
+              }
+            }
+          },
+          "required": [
+            "groups",
+            "resultRules"
+          ]
+        }
+      ]
+    }
+  }
+}

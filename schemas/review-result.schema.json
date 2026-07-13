@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://serialos.local/schemas/review-result.schema.json",
+  "title": "ReviewResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contentRunId",
+    "versionSetHash",
+    "gate",
+    "scores",
+    "findings",
+    "summary"
+  ],
+  "properties": {
+    "contentRunId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "versionSetHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "gate": {
+      "enum": [
+        "pass",
+        "pass_with_warnings",
+        "block"
+      ]
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authenticity",
+        "sourceCoverage",
+        "structure",
+        "voiceAlignment",
+        "originality",
+        "formatFit",
+        "safety",
+        "artifactValidity"
+      ],
+      "properties": {
+        "authenticity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "sourceCoverage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "structure": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "voiceAlignment": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "originality": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "formatFit": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "safety": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "artifactValidity": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 300,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "severity",
+          "ruleId",
+          "message",
+          "contentAssetVersionId",
+          "location",
+          "suggestedFix"
+        ],
+        "properties": {
+          "category": {
+            "enum": [
+              "factuality",
+              "personal_authenticity",
+              "source_coverage",
+              "privacy",
+              "duplication",
+              "voice",
+              "structure",
+              "overclaim",
+              "copyright",
+              "safety",
+              "artifact_validity",
+              "accessibility"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "blocker",
+              "warning",
+              "info"
+            ]
+          },
+          "ruleId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "contentAssetVersionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "location": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "startOffset": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "endOffset": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "blockId": {
+                "type": "string",
+                "maxLength": 100
+              }
+            }
+          },
+          "suggestedFix": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "relatedClaimIndexes": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 3000
+    }
+  }
+}

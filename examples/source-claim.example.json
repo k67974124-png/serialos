@@ -1,0 +1,39 @@
+{
+  "contentAssetVersionId": "77777777-7777-4777-8777-777777777777",
+  "claims": [
+    {
+      "claimText": "我使用 AI 后没有明显提前下班。",
+      "claimType": "personal_experience",
+      "supportStatus": "supported",
+      "startOffset": 0,
+      "endOffset": 17,
+      "riskLevel": "medium",
+      "sources": [
+        {
+          "sourceType": "material",
+          "sourceId": "11111111-1111-4111-8111-111111111111",
+          "relationship": "supports",
+          "excerpt": "我并没有真正提前下班。"
+        }
+      ],
+      "notes": "必须由创作者确认可公开。"
+    },
+    {
+      "claimText": "计算 AI 效率时应纳入检查和返工时间。",
+      "claimType": "recommendation",
+      "supportStatus": "supported",
+      "startOffset": 18,
+      "endOffset": 38,
+      "riskLevel": "low",
+      "sources": [
+        {
+          "sourceType": "insight_asset",
+          "sourceId": "55555555-5555-4555-8555-555555555555",
+          "relationship": "supports",
+          "excerpt": "验证和返工也是总成本的一部分。"
+        }
+      ],
+      "notes": ""
+    }
+  ]
+}
