@@ -1,92 +1,146 @@
-# SerialOS「连载工坊」Codex 项目开工包
+# SerialOS
 
-版本：1.0  
-日期：2026-07-12  
-产品阶段：MVP  
-主要语言：中文产品界面与内容，英文代码与标识符
+SerialOS 是面向中文知识型创作者的 AI 编辑操作系统。本仓库当前只完成 E00 工程基座：可重复安装的 TypeScript 单仓库、Web 与 Worker、PostgreSQL/pgvector、S3 兼容对象存储、持久任务、类型化合同、可观测与安全基线，以及默认离线的 CI。登录、内容生产、审校、导出和发布均未实现。
 
-SerialOS 是面向中文知识型自媒体创作者的 AI 单人编辑部。它把语音、笔记、网页、历史文章和评论，持续转化为有个人观点、可追溯、可审阅的栏目内容包。每个内容包可以包含：
+## 环境要求
 
-- 一篇母内容；
-- 一份 3 至 8 分钟视频脚本；
-- 一组小红书图文卡片；
-- 三条短视频脚本；
-- 若干短观点；
-- 一个模板化互动作品；
-- 一份来源与声明账本；
-- 一份质量检查结果。
+- Git
+- Node.js 24.12.0（见 `.nvmrc`）
+- Corepack 与 pnpm 11.12.0（见 `package.json`）
+- Docker Engine 与 Docker Compose v2
+- Python 3.11 或更高版本
 
-本仓库不是概念提案，而是可直接交给 Codex 的实现规格。Codex 应从 `START_HERE.md` 开始，遵循 `AGENTS.md`，按 `tasks/` 中的依赖顺序实现。
+本地端口必须可用：Web `3000`、Worker 健康检查 `3001`、PostgreSQL `55431`、MinIO API/控制台 `59010/59011`、Mailpit SMTP/UI `51024/58024`。隔离测试使用 `55432`、`59000/59001`、`51025/58025`。
 
-## 关键产品原则
+若 `3000` 或 `3001` 已被占用，可在 `.env` 中修改 `WEB_PORT`、`APP_URL` 与 `WORKER_HEALTH_PORT`；跨平台启动脚本会使用这些值，不需要修改 package script。
 
-1. 先证据，后表达。
-2. 不得编造创作者经历、客户案例、数据或引语。
-3. 自动生产，人工批准，MVP 不自动向外部平台发布。
-4. 多平台内容必须重新编辑，不得只做机械裁剪。
-5. 互动作品采用安全模板，不执行模型生成的任意代码。
-6. 每次 AI 调用必须可追踪、可重放、可评估。
-7. 生成结果必须通过结构化输出校验与质量门。
+## 首次安装
 
-## 文档地图
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+python -m pip install -r scripts/requirements.txt
+cp .env.example .env
+```
 
-- `START_HERE.md`：交给 Codex 的第一条指令。
-- `AGENTS.md`：仓库级工程规则和完成定义。
-- `PLANS.md`：复杂任务的执行计划模板。
-- `MASTER_SPEC.md`：合并后的完整产品与技术规格。
-- `FILE_MANIFEST.md`：文件大小、用途与 SHA-256 清单。
-- `docs/`：按主题拆分的详细规格。
-- `schemas/`：AI 结构化输出 JSON Schema。
-- `examples/`：与 Schema 一一对应的合同示例与测试 fixtures。
-- `contracts/openapi.yaml`：产品 API 合约。
-- `db/schema.sql`：核心 PostgreSQL 数据模型。
-- `tasks/`：按依赖排列的实施 Epic。
-- `.agents/skills/`：仓库级 Codex Skills。
-- `prompts/`：可复制给 Codex 的阶段性指令。
-- `scripts/validate_specs.py`：离线规格编译与一致性检查。
-- `VALIDATION_REPORT.md`：最近一次静态验证结果。
+PowerShell 中复制环境文件：
 
-## 推荐实现顺序
+```powershell
+Copy-Item .env.example .env
+```
 
-1. `E00` 工程基座与本地环境；
-2. `E01` 认证、工作区与引导；
-3. `E02` 素材收件箱；
-4. `E03` AI 入库与观点资产；
-5. `E04` 创作者画像与栏目；
-6. `E05` AI 选题会；
-7. `E06` 制作任务与补充采访；
-8. `E07` 内容包生成；
-9. `E08` 声明账本、质量门与审核；
-10. `E09` 互动作品模板；
-11. `E10` 导出、发布记录与数据回流；
-12. `E11` 安全、评测、可观测与发布门。
+`.env.example` 仅包含本地开发值和空的 provider key。不要把真实密钥提交到仓库。
 
-## MVP 之外
+## 启动本地开发环境
 
-以下能力禁止在未记录 ADR 的情况下提前实现：
+先启动依赖并执行迁移和合成数据种子：
 
-- 自动发布到公众号、小红书、抖音或视频号；
-- 数字人、声音克隆和自动配音；
-- 多人协作与复杂权限；
-- 任意代码生成后直接执行；
-- 热点批量搬运；
-- 自动回复评论；
-- 付费订阅与账单；
-- 原生移动应用；
-- 对创作者历史内容进行模型微调。
+```bash
+pnpm infra:up
+pnpm db:migrate
+pnpm db:seed
+```
 
-## 参考技术方案
+迁移和种子命令可重复执行。然后启动 Web 与 Worker：
 
-技术选择以 `docs/11-system-architecture.md` 为准。原则上采用：
+```bash
+pnpm dev
+```
 
-- TypeScript monorepo；
-- Next.js Web 应用；
-- 独立 Node.js Worker；
-- PostgreSQL + pgvector；
-- S3 兼容对象存储；
-- PostgreSQL 持久化任务队列；
-- OpenAI Responses API、Structured Outputs、Web Search、Embeddings 与 Speech-to-Text；
-- Playwright、Vitest、类型检查和静态分析；
-- Docker Compose 本地依赖。
+可访问：
 
-所有具体依赖版本应在首次初始化时选择“当前稳定且互相兼容”的版本，并提交 lockfile。不得在业务代码中硬编码模型、价格或供应商凭证。
+- 工程状态页：<http://localhost:3000>
+- Web 存活/就绪：<http://localhost:3000/health/live>、<http://localhost:3000/health/ready>
+- Worker 存活/就绪：<http://127.0.0.1:3001/health/live>、<http://127.0.0.1:3001/health/ready>
+- MinIO 控制台：<http://127.0.0.1:59011>
+- Mailpit：<http://127.0.0.1:58024>
+
+就绪检查会真实探测 PostgreSQL 与 MinIO；依赖不可用时返回经过清理的 `503`，存活检查仍独立工作。
+
+## 验证与测试
+
+无需 OpenAI key。常用门禁：
+
+```bash
+pnpm specs:validate
+pnpm contracts:check
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:offline
+pnpm build
+pnpm dependency:check
+```
+
+集成测试、浏览器测试和烟雾测试使用独立的 `serialos-test` Compose 项目，不会复用开发数据库或 bucket：
+
+```bash
+pnpm infra:test:up
+pnpm test:integration
+pnpm exec playwright install chromium
+pnpm test:e2e
+pnpm smoke
+pnpm infra:test:down
+```
+
+`pnpm smoke` 会执行生产构建，运行迁移与种子，启动生产模式 Web 和 Worker，并完成 Web/Worker 健康检查、PostgreSQL 回环以及 MinIO 写入/读取/删除回环。`pnpm ci:prove-failures` 在临时目录中故意破坏 Schema、TypeScript 类型和 migration checksum；只有三项均因预期原因失败且临时文件已删除时，该命令才成功。
+
+完整本地发布门禁：
+
+```bash
+pnpm install --frozen-lockfile
+pnpm infra:test:up
+pnpm specs:validate
+pnpm contracts:check
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:offline
+pnpm test:integration
+pnpm test:e2e
+pnpm build
+pnpm smoke
+pnpm dependency:check
+pnpm ci:prove-failures
+pnpm ci:verify-workflow
+pnpm infra:test:down
+```
+
+## Live provider 策略
+
+默认测试与 CI 明确关闭 live provider，不访问真实 OpenAI API，也不需要任何 provider key：
+
+```bash
+pnpm test:live
+```
+
+E00 尚未实现 live adapter。即使显式设置 `FEATURE_LIVE_PROVIDER_TESTS=true`，命令也会在任何网络调用前以 `LIVE_PROVIDER_ADAPTER_NOT_IMPLEMENTED_IN_E00` 失败。后续 AI Epic 只有在实现合成 smoke fixture、独立密钥和预算后才能改变该行为。
+
+## 停止与清理
+
+停止服务但保留数据卷：
+
+```bash
+pnpm infra:down
+pnpm infra:test:down
+```
+
+删除 SerialOS 本地开发和测试 Compose 项目及其数据卷：
+
+```bash
+pnpm infra:clean
+```
+
+`infra:clean` 会永久删除项目作用域内的本地数据库和对象，不能用于生产资源。脚本会校验固定 Compose 项目名，不会按模糊路径或全局名称清理其他 Docker 资源。
+
+## 工程边界
+
+- `apps/web`：Next.js Web 与公开健康路由
+- `apps/worker`：独立 Worker 与仅回环监听的健康服务
+- `packages/domain`、`application`、`db`、`jobs`：框架无关领域、应用、数据与持久任务边界
+- `packages/ai`、`storage`、`contracts`：外部服务端口、对象存储和版本化合同
+- `packages/observability`、`config`、`ui`、`testkit`：日志/追踪、类型化配置、基础 UI 与确定性测试替身
+
+所有外部服务均位于接口之后；默认 CI 使用确定性替身。E00 不包含 E01 路由、认证或任何自动发布能力。

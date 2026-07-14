@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -46,6 +47,26 @@ STALE_TERMS = {
     "case_claim",
     "dismissed_false_positive",
 }
+
+IGNORED_REPOSITORY_DIRECTORIES = {
+    ".git",
+    ".next",
+    ".turbo",
+    "coverage",
+    "dist",
+    "node_modules",
+    "playwright-report",
+    "test-results",
+}
+
+
+def repository_files(root: Path) -> Iterable[Path]:
+    for directory, directory_names, file_names in os.walk(root):
+        directory_names[:] = sorted(
+            name for name in directory_names if name not in IGNORED_REPOSITORY_DIRECTORIES
+        )
+        for file_name in sorted(file_names):
+            yield Path(directory) / file_name
 
 
 @dataclass
@@ -386,7 +407,7 @@ def resolve_file_pattern(root: Path, source_file: Path, raw_ref: str) -> list[Pa
 
 
 def validate_markdown_and_manifest(root: Path, result: Result) -> None:
-    files = [path for path in root.rglob("*") if path.is_file()]
+    files = list(repository_files(root))
     markdown_files = [path for path in files if path.suffix.lower() == ".md"]
 
     for path in markdown_files:
@@ -442,8 +463,8 @@ def validate_stale_terms(root: Path, result: Result) -> None:
     ignored_names = {"MASTER_SPEC.md", "VALIDATION_REPORT.md"}
     for token in sorted(STALE_TERMS):
         hits: list[str] = []
-        for path in root.rglob("*"):
-            if not path.is_file() or path.name in ignored_names:
+        for path in repository_files(root):
+            if path.name in ignored_names:
                 continue
             if path.suffix.lower() not in {".md", ".json", ".yaml", ".yml", ".sql"}:
                 continue

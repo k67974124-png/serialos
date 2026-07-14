@@ -1,0 +1,31 @@
+{
+  "name": "@serialos/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "db:migrate": "node --env-file-if-exists=../../.env --import tsx src/migrations/cli.ts",
+    "db:seed": "node --env-file-if-exists=../../.env --import tsx src/seed/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@serialos/application": "workspace:*",
+    "@serialos/domain": "workspace:*",
+    "drizzle-orm": "0.45.2",
+    "pg": "8.22.0"
+  },
+  "devDependencies": {
+    "@types/pg": "8.20.0",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

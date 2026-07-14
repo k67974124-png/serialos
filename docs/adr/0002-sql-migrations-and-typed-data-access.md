@@ -1,6 +1,6 @@
 # ADR-0002: SQL migrations and typed data access
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-07-12
 - Owners: TBD
 - Related requirements: E00-S03, FR-OPS-001 through FR-OPS-006, FR-AUTH-003 foundation

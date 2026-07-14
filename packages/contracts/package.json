@@ -1,0 +1,31 @@
+{
+  "name": "@serialos/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "contracts:check": "node scripts/check-contracts.mjs && vitest run --config ../../vitest.contract.config.ts",
+    "contracts:generate": "node scripts/generate-contracts.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
+    "json-schema-to-typescript": "15.0.4",
+    "prettier": "3.9.5",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "12.1.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}

@@ -9,6 +9,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GENERATED = {"MASTER_SPEC.md", "FILE_MANIFEST.md", "VALIDATION_REPORT.md"}
 TEXT_SUFFIXES = {".md", ".json", ".yaml", ".yml", ".sql", ".py", ".txt", ".example"}
+IGNORED_PARTS = {".git", "node_modules", ".pnpm-store", "__pycache__"}
+
+
+def is_ignored(path: Path) -> bool:
+    return any(part in IGNORED_PARTS for part in path.relative_to(ROOT).parts)
 
 
 def sha256(path: Path) -> str:
@@ -40,7 +45,7 @@ def source_files() -> list[Path]:
         if not base.exists():
             continue
         for path in sorted(base.rglob("*")):
-            if not path.is_file() or path.name in GENERATED:
+            if not path.is_file() or is_ignored(path) or path.name in GENERATED:
                 continue
             if path.suffix.lower() in TEXT_SUFFIXES or path.name.endswith(".example"):
                 ordered.append(path)
@@ -103,7 +108,8 @@ def build_master(files: list[Path]) -> None:
 
     for index, path in enumerate(files, start=1):
         rel = path.relative_to(ROOT).as_posix()
-        content = path.read_text(encoding="utf-8", errors="replace").rstrip()
+        raw_content = path.read_text(encoding="utf-8", errors="replace")
+        content = "\n".join(line.rstrip() for line in raw_content.splitlines()).rstrip()
         digest = sha256(path)
         lines.extend(
             [
@@ -113,7 +119,7 @@ def build_master(files: list[Path]) -> None:
                 f'<a id="source-{index}"></a>',
                 f"# Source {index}: `{rel}`",
                 "",
-                f"SHA-256: `{digest}`  ",
+                f"SHA-256: `{digest}`",
                 f"Bytes: `{path.stat().st_size}`",
                 "",
             ]
@@ -128,7 +134,11 @@ def build_master(files: list[Path]) -> None:
 
 
 def build_manifest() -> None:
-    files = [path for path in ROOT.rglob("*") if path.is_file() and path.name != "FILE_MANIFEST.md"]
+    files = [
+        path
+        for path in ROOT.rglob("*")
+        if path.is_file() and not is_ignored(path) and path.name != "FILE_MANIFEST.md"
+    ]
     files = sorted(files, key=lambda path: path.relative_to(ROOT).as_posix())
     by_top: dict[str, list[Path]] = {}
     for path in files:

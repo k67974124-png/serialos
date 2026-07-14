@@ -1,6 +1,6 @@
 # E00 工程基座
 
-状态：`planning`  
+状态：`verification`
 负责人：待指定  
 依赖：无  
 建议模型：规划与审查使用 `gpt-5.6-sol`，明确实现使用 `gpt-5.6-terra`

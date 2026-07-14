@@ -1,5 +1,5 @@
 -- SerialOS MVP reference schema.
--- The implementation should convert this into the chosen migration tool.
+-- Executable history lives under packages/db/migrations; this file describes the head schema.
 -- PostgreSQL 16+ recommended; exact supported version must be pinned in E00.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -1100,18 +1100,24 @@ CREATE TABLE jobs (
   locked_at timestamptz,
   locked_by text,
   heartbeat_at timestamptz,
+  progress numeric(5,4) NOT NULL DEFAULT 0,
+  current_step text,
+  checkpoint jsonb NOT NULL DEFAULT '{}'::jsonb,
+  cancel_requested_at timestamptz,
+  dead_lettered_at timestamptz,
   last_error jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   completed_at timestamptz,
-  CONSTRAINT job_attempts CHECK (attempt >= 0 AND max_attempts > 0)
+  CONSTRAINT job_attempts CHECK (attempt >= 0 AND max_attempts > 0),
+  CONSTRAINT jobs_progress_range CHECK (progress >= 0 AND progress <= 1)
 );
 CREATE UNIQUE INDEX jobs_dedupe_active_unique
   ON jobs(workspace_id, type, dedupe_key)
   WHERE dedupe_key IS NOT NULL AND status IN ('queued', 'running', 'retry_scheduled');
 CREATE INDEX jobs_available_idx
   ON jobs(priority DESC, available_at, created_at)
-  WHERE status = 'queued';
+  WHERE status IN ('queued', 'retry_scheduled');
 
 CREATE TABLE workspace_deletions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1142,6 +1148,22 @@ CREATE TABLE audit_logs (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX audit_workspace_created_idx ON audit_logs(workspace_id, created_at DESC);
+
+CREATE FUNCTION reject_audit_log_mutation()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION USING
+    ERRCODE = '55000',
+    MESSAGE = 'audit_logs are append-only';
+END;
+$$;
+
+CREATE TRIGGER audit_logs_append_only
+BEFORE UPDATE OR DELETE ON audit_logs
+FOR EACH ROW
+EXECUTE FUNCTION reject_audit_log_mutation();
 
 -- All application queries must scope by workspace_id even where FK chains imply it.
 -- Consider PostgreSQL row-level security only if the team commits to testing and

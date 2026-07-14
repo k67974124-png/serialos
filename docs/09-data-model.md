@@ -477,7 +477,7 @@ MVP 只有 owner，但保留：
 
 ### jobs 与 outbox_events
 
-- `jobs` 是异步执行的持久化事实，保存 attempt、锁、heartbeat、重试、dead-letter 和资源引用；
+- `jobs` 是异步执行的持久化事实，保存 attempt、锁、heartbeat、progress、current_step、checkpoint、取消请求、dead-letter 时间和资源引用；
 - `outbox_events` 与业务事务一起写入，由 Worker 至少一次投递；
 - 消费者必须通过 event ID 或业务幂等键去重。
 
@@ -512,6 +512,8 @@ MVP 只有 owner，但保留：
 - ip_hash；
 - user_agent_hash；
 - created_at。
+
+`audit_logs` 是 append-only 事实：应用只允许插入，数据库触发器拒绝 UPDATE 和 DELETE。
 
 ## 3. 状态转换约束
 

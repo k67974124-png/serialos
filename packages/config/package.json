@@ -1,0 +1,30 @@
+{
+  "name": "@serialos/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "infra:clean": "node ../../scripts/infra/compose.mjs clean",
+    "infra:down": "node ../../scripts/infra/compose.mjs down",
+    "infra:test:down": "node ../../scripts/infra/compose.mjs test-down",
+    "infra:test:up": "node ../../scripts/infra/compose.mjs test-up",
+    "infra:up": "node ../../scripts/infra/compose.mjs up",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

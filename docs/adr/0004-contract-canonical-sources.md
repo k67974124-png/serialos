@@ -1,6 +1,6 @@
 # ADR-0004: Canonical contract sources and generated TypeScript types
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-07-12
 - Owners: TBD
 - Related requirements: E00-S05, E00-S06, FR-OPS-006
@@ -33,6 +33,8 @@ The handoff already contains OpenAPI 3.1, nine Draft 2020-12 AI JSON Schemas and
 - OpenAPI and AI schemas remain separate canonical domains; shared primitives should be referenced/generated rather than copied where possible.
 - E00 contract coverage is honest about implemented operations while still validating the entire specification.
 
+Implementation uses pinned `@apidevtools/swagger-parser` for complete OpenAPI validation and dereferencing, Ajv 2020 plus `ajv-formats` for runtime JSON Schema enforcement, `@hey-api/openapi-ts` for OpenAPI type generation compatible with the pinned TypeScript 6 toolchain, and `json-schema-to-typescript` for the nine AI-schema type sets. Prettier is a generation-only dependency so checked-in artifacts and drift checks are byte-stable across clean installs.
+
 ## Validation
 
 - all OpenAPI references resolve;
@@ -41,4 +43,3 @@ The handoff already contains OpenAPI 3.1, nine Draft 2020-12 AI JSON Schemas and
 - generated output has no diff after regeneration;
 - E00 operation manifest exactly matches registered Web routes;
 - fake AI outputs use production validators and invalid-schema fixtures are rejected.
-

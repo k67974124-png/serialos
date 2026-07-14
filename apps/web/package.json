@@ -1,0 +1,29 @@
+{
+  "name": "@serialos/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "next build",
+    "dev": "node --env-file-if-exists=../../.env scripts/next-process.mjs dev",
+    "start": "node --env-file-if-exists=../../.env scripts/next-process.mjs start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@serialos/application": "workspace:*",
+    "@serialos/config": "workspace:*",
+    "@serialos/contracts": "workspace:*",
+    "@serialos/db": "workspace:*",
+    "@serialos/storage": "workspace:*",
+    "@serialos/ui": "workspace:*",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:"
+  }
+}

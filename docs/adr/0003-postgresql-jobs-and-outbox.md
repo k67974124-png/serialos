@@ -1,6 +1,6 @@
 # ADR-0003: PostgreSQL durable jobs and transactional outbox
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-07-12
 - Owners: TBD
 - Related requirements: E00-S04, FR-OPS-002, NFR-002, NFR-003

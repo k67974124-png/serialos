@@ -1,6 +1,6 @@
 # ADR-0001: Foundation toolchain and package boundaries
 
-- Status: proposed
+- Status: accepted
 - Date: 2026-07-12
 - Owners: TBD
 - Related requirements: E00-S01, E00-S07, E00-S08, NFR-001 through NFR-007
@@ -34,6 +34,7 @@ E00 must turn a specification-only handoff into a reproducible TypeScript monore
 - `testkit` differs from the architecture diagram but matches E00 acceptance.
 - Exact dependency versions are not decided by this planning ADR; they must be pinned in the implementation lockfile and documented.
 - GitHub Actions is not a commitment to GitHub deployment or GitHub OAuth.
+- The E00 observability adapter pins Pino for newline-delimited JSON and the OpenTelemetry API for vendor-neutral spans. Pino receives only pre-redacted fields, and OpenTelemetry requires no exporter in local development or default CI; both dependencies remain confined to `packages/observability`.
 
 ## Validation
 
@@ -42,4 +43,3 @@ E00 must turn a specification-only handoff into a reproducible TypeScript monore
 - all root commands invoke real checks;
 - Web and Worker production build smoke;
 - CI invokes the same pnpm commands documented for local use.
-

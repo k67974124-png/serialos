@@ -1,0 +1,64 @@
+name: serialos-dev
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.5-pg16-trixie
+    environment:
+      POSTGRES_DB: serialos
+      POSTGRES_PASSWORD: serialos-local-only
+      POSTGRES_USER: serialos
+    ports:
+      - "127.0.0.1:55431:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U serialos -d serialos"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_PASSWORD: serialos-minio-dev-only
+      MINIO_ROOT_USER: minio
+    ports:
+      - "127.0.0.1:59010:9000"
+      - "127.0.0.1:59011:9001"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - minio-data:/data
+
+  minio-bootstrap:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        mc alias set local http://minio:9000 minio serialos-minio-dev-only
+        mc mb --ignore-existing local/serialos-dev
+        mc anonymous set none local/serialos-dev
+    restart: "no"
+
+  mailpit:
+    image: axllent/mailpit:v1.30.4
+    ports:
+      - "127.0.0.1:51024:1025"
+      - "127.0.0.1:58024:8025"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8025/livez"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  minio-data:
+  postgres-data:

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "id": 1,
+      "name": "0001_baseline",
+      "file": "0001_baseline.sql",
+      "sha256": "4ef1b9d6660c62c1c93ea90b530be42320ddde954f703805ae65550c02442894"
+    },
+    {
+      "id": 2,
+      "name": "0002_foundation_runtime",
+      "file": "0002_foundation_runtime.sql",
+      "sha256": "d3d8b754213ce18c8f276a01be01ec4b9707c51141f0b3845f06defce7eaccd1"
+    }
+  ]
+}
