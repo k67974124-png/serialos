@@ -15,10 +15,12 @@
     "@serialos/db": "workspace:*",
     "@serialos/jobs": "workspace:*",
     "@serialos/observability": "workspace:*",
-    "@serialos/storage": "workspace:*"
+    "@serialos/storage": "workspace:*",
+    "pg": "8.22.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/pg": "8.20.0",
     "tsx": "catalog:",
     "typescript": "catalog:"
   }

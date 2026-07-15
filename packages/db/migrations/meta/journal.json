@@ -13,6 +13,12 @@
       "name": "0002_foundation_runtime",
       "file": "0002_foundation_runtime.sql",
       "sha256": "d3d8b754213ce18c8f276a01be01ec4b9707c51141f0b3845f06defce7eaccd1"
+    },
+    {
+      "id": 3,
+      "name": "0003_job_correlation",
+      "file": "0003_job_correlation.sql",
+      "sha256": "cf5df30f1ed32e70a5e6f365e1f786951b8f0b5a30771297677fdcb2035ff533"
     }
   ]
 }

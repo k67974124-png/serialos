@@ -1,6 +1,6 @@
 import type { DependencyProbe } from "@serialos/application";
 import { parseRuntimeConfig } from "@serialos/config";
-import { PostgresHealthProbe } from "@serialos/db";
+import { PostgresHealthProbe, PostgresQueueHealthProbe } from "@serialos/db";
 import { S3BucketHealthProbe } from "@serialos/storage";
 
 interface HealthRuntime {
@@ -18,6 +18,7 @@ export function getHealthRuntime(): HealthRuntime {
   runtime = {
     probes: [
       new PostgresHealthProbe(config.databaseUrl),
+      new PostgresQueueHealthProbe(config.databaseUrl),
       new S3BucketHealthProbe(config.objectStorage),
     ],
   };

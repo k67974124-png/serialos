@@ -1,4 +1,4 @@
-import type { JobId, WorkspaceId } from "@serialos/domain";
+import type { JobId, RequestId, WorkspaceId } from "@serialos/domain";
 
 export const JOB_STATUSES = [
   "queued",
@@ -18,6 +18,11 @@ export interface JobReference {
   readonly workspaceId: WorkspaceId;
 }
 
+export interface JobCorrelation {
+  readonly requestId: RequestId;
+  readonly traceId: string;
+}
+
 export interface JobCheckpoint {
   readonly completedSteps: readonly string[];
   readonly providerRequestIds: Readonly<Record<string, string>>;
@@ -28,7 +33,7 @@ export interface MinimalJobPayload {
   readonly [key: string]: number | string;
 }
 
-export interface JobLease extends JobReference {
+export interface JobLease extends JobReference, JobCorrelation {
   readonly attempt: number;
   readonly checkpoint: JobCheckpoint;
   readonly currentStep: string | null;
@@ -39,7 +44,7 @@ export interface JobLease extends JobReference {
   readonly type: string;
 }
 
-export interface EnqueueJobInput {
+export interface EnqueueJobInput extends JobCorrelation {
   readonly availableAt?: Date;
   readonly dedupeKey?: string;
   readonly maxAttempts?: number;
@@ -63,6 +68,16 @@ export class JobStateConflictError extends Error {
   public constructor() {
     super("The job lease or state no longer permits this transition");
     this.name = "JobStateConflictError";
+  }
+}
+
+export class JobExecutionError extends Error {
+  public readonly safeError: SafeJobError;
+
+  public constructor(safeError: SafeJobError) {
+    super("Job execution failed with a classified error");
+    this.name = "JobExecutionError";
+    this.safeError = safeError;
   }
 }
 

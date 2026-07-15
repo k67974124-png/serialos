@@ -30,7 +30,7 @@
     "smoke": "pnpm --filter @serialos/testkit smoke",
     "specs:validate": "python scripts/validate_specs.py",
     "test": "vitest run --config vitest.config.ts",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/e2e/run.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:live": "node scripts/ci/live-provider-guard.mjs",
     "test:offline": "vitest run --config vitest.offline.config.ts",

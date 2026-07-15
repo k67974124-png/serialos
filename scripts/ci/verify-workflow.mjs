@@ -34,6 +34,9 @@ if (
 ) {
   throw new Error("CI workflow must cache pnpm dependencies using the lockfile");
 }
+if (!workflow.includes("standalone: true") || !workflow.includes("version: 11.12.0")) {
+  throw new Error("CI must bootstrap the pinned pnpm version without relying on runner Node.js");
+}
 if (!workflow.includes("pnpm infra:test:up") || !workflow.includes("pnpm infra:test:down")) {
   throw new Error("CI workflow must start and stop isolated PostgreSQL/object-storage services");
 }

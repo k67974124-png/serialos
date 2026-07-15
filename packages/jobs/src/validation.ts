@@ -1,7 +1,10 @@
-import type { JobCheckpoint, MinimalJobPayload, SafeJobError } from "./job.js";
+import { asRequestId } from "@serialos/domain";
+
+import type { JobCheckpoint, JobCorrelation, MinimalJobPayload, SafeJobError } from "./job.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const STEP_PATTERN = /^[a-z][a-z0-9_.-]{0,79}$/u;
+const TRACE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/u;
 
 export class UnsafeJobDataError extends Error {
   public constructor(message: string) {
@@ -33,6 +36,13 @@ export function assertMinimalJobPayload(value: unknown): asserts value is Minima
     }
     throw new UnsafeJobDataError(`Job payload field ${key} is not an ID or version`);
   }
+}
+
+export function validateJobCorrelation(requestId: string, traceId: string): JobCorrelation {
+  if (!TRACE_ID_PATTERN.test(traceId)) {
+    throw new UnsafeJobDataError("Job trace ID is invalid");
+  }
+  return { requestId: asRequestId(requestId), traceId };
 }
 
 function assertStringMap(value: unknown, name: string): asserts value is Record<string, string> {

@@ -17,7 +17,12 @@ export default defineConfig({
       "**/*.offline.test.ts",
       "**/*.contract.test.ts",
     ],
-    include: ["packages/**/src/**/*.test.ts", "packages/**/test/**/*.test.ts"],
+    include: [
+      "apps/**/src/**/*.test.ts",
+      "packages/**/src/**/*.test.ts",
+      "packages/**/test/**/*.test.ts",
+      "scripts/**/*.test.mjs",
+    ],
     pool: "threads",
   },
 });

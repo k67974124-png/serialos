@@ -15,7 +15,7 @@ The repository supplies a complete PostgreSQL/pgvector `db/schema.sql` but no ex
 - Use SQL migrations executed by the Drizzle migration runner rather than regenerating the supplied schema from ORM metadata.
 - Create `0001_baseline.sql` as an immutable snapshot of the supplied SQL before E00 runtime corrections.
 - Create `0002_foundation_runtime.sql` for the queue fields/constraints and audit append-only enforcement required by E00.
-- Update `db/schema.sql` to represent the head schema after `0002`; keep Drizzle schema declarations as a typed projection protected by integration/drift tests.
+- Update `db/schema.sql` to represent the migration head; keep Drizzle schema declarations as a typed projection protected by integration/drift tests. Later E00 corrections use additive, checksummed forward migrations such as `0003_job_correlation`; released migration files remain immutable.
 - Migrate the full supplied schema in E00, but expose no later-Epic business handlers or UI.
 - Use forward-only repair after data exists. Automated down migrations may be used only in isolated tests where explicitly safe.
 - Seed only deterministic synthetic data, including two same-shape workspaces for isolation tests.
@@ -38,11 +38,10 @@ The repository supplies a complete PostgreSQL/pgvector `db/schema.sql` but no ex
 
 ## Validation
 
-- Empty database applies `0001` and `0002`;
-- database at `0001` upgrades to `0002` without data loss;
+- Empty database applies `0001`, `0002` and `0003`;
+- database at `0001` upgrades to head without data loss;
 - migration checksum tamper fails closed;
 - migrate and seed can be re-run safely;
 - migrated schema contains required extensions, enums, tables, constraints and indexes;
 - workspace helper rejects absent scope and cannot read another seeded workspace;
 - audit rows can be inserted but not updated/deleted through the application database role/path.
-

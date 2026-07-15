@@ -497,3 +497,76 @@ The deployment target, E01 login method and production object-storage provider a
 - Full traceability, command evidence, resolved review findings and residual risks: `docs/acceptance/E00-implementation-report.md`.
 - Open blocker/major/minor findings: 0/0/0.
 - Final implementation state: `READY_FOR_INDEPENDENT_ACCEPTANCE`; E01 remains not started.
+
+## 17. Independent-acceptance remediation addendum (2026-07-14)
+
+### Objective and boundary
+
+Close independent findings B-001, M-001 through M-004 and the repository-actionable portion of U-001 without changing the E00 task state or starting E01. No product route, business handler, real provider adapter or later-Epic UI is added.
+
+### Finding-to-change map
+
+| Finding | Remediation | Required proof |
+|---|---|---|
+| B-001 log leakage | Normalize key separators/case; cover provider-prefixed credential suffixes and raw `content`/`material`/`transcription`; replace unserializable objects with a fixed marker | Reported sentinels absent from processor/logger output; unknown proxy cannot crash logging |
+| M-001 Windows contract drift | Add repository LF attributes for canonical/generated text assets | `core.autocrlf=true` Git archive and clone contain LF generated output; frozen install and contract drift gate pass |
+| M-002 hosted CI bootstrap | Configure the pinned pnpm action in standalone mode with explicit `11.12.0`; self-check requires both inputs | Local workflow self-check and every declared gate pass; a new hosted run remains required after commit/push |
+| M-003 false readiness | Add a separate queue probe that validates the zero-row PostgreSQL claim/update path | Migrated database ready; reachable empty database returns queue unavailable/HTTP 503 while liveness remains 200 |
+| M-004 Worker/correlation gap | Add forward `0003_job_correlation`; require correlation on new enqueue/outbox writes; compose PostgreSQL outbox/claim loops in the actual Worker; dead-letter unknown types | Real PostgreSQL integration proves outbox dispatch, supported success, unknown-type dead letter, bounded shutdown and persisted/logged request/job/trace IDs |
+| U-001 global Corepack permission | Document and verify repository-local Corepack shims; CI avoids runner Node bootstrap dependency | Local shim enables pnpm 11.12.0 and frozen install without administrator access |
+
+### Data, security and rollback
+
+- `0003_job_correlation` is forward-only. It adds request/trace pairs, backfills legacy durable rows with an explicit `migration:<row-id>` trace plus generated migration request ID, and then applies `NOT NULL`, format constraints and a scoped request index. New typed application paths require both values.
+- Worker logs contain correlation IDs, state and stable error codes only. Job payloads and exception messages are not logged. Unknown types are non-retryable and cannot become fake success.
+- Rollback reverts application composition and readiness code. The additive columns/index may remain inert; removing them requires a separately reviewed forward migration once data exists. Existing 0001/0002 migrations are unchanged.
+
+### Verification sequence
+
+1. Redaction unit tests and contract drift check.
+2. Empty/migrated queue readiness integration test.
+3. Migration, queue/outbox and production Worker composition integration tests.
+4. Windows clean Git materialization with frozen install and contract check.
+5. Normal/empty-database Web and Worker runtime probes.
+6. Full E00 specs, format, lint, typecheck, unit, offline, integration, contract, E2E, build, migration/seed/re-migrate, mutation and smoke gates.
+7. `$verify-release`; keep the task in `verification` and request a new independent acceptance. Hosted CI cannot be declared fixed until the remediation commit is pushed and its current run succeeds.
+
+## 18. Follow-up independent-acceptance remediation (2026-07-14)
+
+### Objective and boundary
+
+Close the two local E00-S08 majors reported after the first remediation: the clean test stack's integration suite must not depend on a previously migrated shared database, and the Windows E2E command must exit after Playwright finishes. This follow-up changes only test orchestration, regression coverage and reproduction documentation; it does not change migrations, product routes, runtime contracts or task status.
+
+### Finding-to-change map
+
+| Finding | Remediation | Required proof |
+|---|---|---|
+| Follow-up M-001 integration setup order | Make the PostgreSQL queue-readiness integration create an empty database and a separately migrated database for its own comparison | After deleting test volumes, `pnpm infra:test:up && pnpm test:integration` passes without a prior root migration or E2E run |
+| Follow-up M-002 Windows E2E exit | Launch Playwright through the pnpm entrypoint that owns the locked toolchain instead of executing its CLI module directly; retain migration preparation in the wrapper | Process-runner unit regression passes and `pnpm test:e2e` returns exit 0 promptly after both Playwright cases pass |
+
+### Verification sequence
+
+1. Process-runner unit regression, lint and typecheck.
+2. Delete the isolated test volumes, start a fresh test stack and run integration before any root test-database migration.
+3. Run `pnpm test:e2e` through the root command and record its exit code and duration.
+4. Recreate a tracked/untracked clean-room copy without `.git`, `.env`, `node_modules` or caches; run frozen install and the complete E00 gate sequence.
+5. Run `$verify-release`; keep E00 in `verification` and E01 not started until a new independent acceptance and exact-commit hosted CI succeed.
+
+## 19. Second follow-up independent-acceptance remediation (2026-07-15)
+
+### Objective and boundary
+
+Close E00-ACC-MAJ-001 and the repository-actionable E00-ACC-UNV-002 from the latest independent report. The E2E runner must own one production standalone Web process and deterministically stop it on both success and failure. Production smoke must execute a real PostgreSQL outage and recovery while Web/Worker liveness remains available and readiness fails closed. No E01 route, business behavior, provider integration or migration change is included.
+
+### Finding-to-change map
+
+| Finding | Remediation | Required proof |
+|---|---|---|
+| E00-ACC-MAJ-001 E2E teardown | Build Web, copy required standalone static assets, start the standalone Node server directly, run Playwright without its `webServer` process tree, and stop the direct child in `finally` | Process and asset unit regressions; root `pnpm test:e2e` returns 0 after both cases; failed assertions also return nonzero without hanging |
+| E00-ACC-UNV-002 readiness fault/recovery | Handle errors from checked-out PostgreSQL transaction clients without an unhandled process event; extend production smoke to stop/start only the `serialos-test` PostgreSQL service and assert Web/Worker `200/503/200` behavior | Transaction regression test plus real Docker smoke output for baseline, outage and recovery |
+
+### Rollback and verification
+
+- Rollback restores Playwright-managed dev Web startup and removes the fault-injection phase; no data migration or persistent schema rollback is involved.
+- The isolated PostgreSQL container is restarted in `finally` if a fault assertion fails, and normal cleanup still removes the project-scoped containers and volumes.
+- Run E2E runner regressions, transaction failure regression, full unit/integration/E2E/build/smoke gates, then repeat from a new clean-room copy before independent acceptance.

@@ -16,6 +16,7 @@ The handoff already contains OpenAPI 3.1, nine Draft 2020-12 AI JSON Schemas and
 - Validate runtime JSON Schema with Ajv Draft 2020-12 and resolve OpenAPI 3.1 references through a parser behind `packages/contracts`.
 - Use Zod for environment/config and local non-canonical value objects, not as a second handwritten copy of AI/API contracts.
 - Check in generated outputs for reproducible builds and add a generation-diff CI check.
+- Declare LF checkout rules for canonical and generated text artifacts in `.gitattributes`; byte-level drift checks must behave identically with Windows `core.autocrlf=true`, Git archive materialization and Linux checkout.
 - In E00, maintain an implemented-operation manifest containing only `getLiveness` and `getReadiness`. Registered routes/responses must match OpenAPI; later declared operations are not fabricated.
 - Deterministic provider fakes must pass the same schema validators as future real adapters.
 
@@ -41,5 +42,6 @@ Implementation uses pinned `@apidevtools/swagger-parser` for complete OpenAPI va
 - all nine examples validate against their matching schemas;
 - negative fixtures and undeclared response tests fail;
 - generated output has no diff after regeneration;
+- a clean Windows Git archive/clone preserves LF generated output and passes `pnpm contracts:check`;
 - E00 operation manifest exactly matches registered Web routes;
 - fake AI outputs use production validators and invalid-schema fixtures are rejected.

@@ -19,6 +19,11 @@ export class PostgresTransactionManager implements TransactionManager {
     work: (transaction: TransactionContext) => Promise<Result>,
   ): Promise<Result> {
     const client = await this.#pool.connect();
+    const connectionState = { failed: false };
+    const handleClientError = (): void => {
+      connectionState.failed = true;
+    };
+    client.on("error", handleClientError);
     try {
       await client.query("BEGIN");
       const result = await work({
@@ -30,10 +35,21 @@ export class PostgresTransactionManager implements TransactionManager {
       await client.query("COMMIT");
       return result;
     } catch (error) {
-      await client.query("ROLLBACK");
+      if (!connectionState.failed) {
+        try {
+          await client.query("ROLLBACK");
+        } catch (rollbackError) {
+          throw new AggregateError(
+            [error],
+            "Transaction failed and rollback was unsuccessful",
+            { cause: rollbackError },
+          );
+        }
+      }
       throw error;
     } finally {
-      client.release();
+      client.removeListener("error", handleClientError);
+      client.release(connectionState.failed);
     }
   }
 }

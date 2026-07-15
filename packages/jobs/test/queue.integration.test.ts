@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { DrizzleSqlMigrationRunner, PostgresTransactionManager } from "@serialos/db";
-import { asWorkspaceId } from "@serialos/domain";
+import { asRequestId, asWorkspaceId } from "@serialos/domain";
 import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -19,6 +19,8 @@ const adminDatabaseUrl =
   "postgresql://serialos:serialos-test-only@127.0.0.1:55432/serialos_test";
 const adminPool = new Pool({ connectionString: adminDatabaseUrl, max: 2 });
 const workspaceId = asWorkspaceId("20000000-0000-4000-8000-000000000001");
+const requestId = asRequestId("30000000-0000-4000-8000-000000000001");
+const traceId = "trace-e00-jobs";
 let databaseSequence = 0;
 
 interface QueueFixture {
@@ -95,6 +97,8 @@ function jobInput(
     payload: { contentRunId: "71000000-0000-4000-8000-000000000001", contentRunVersion: 1 },
     ...(overrides.priority === undefined ? {} : { priority: overrides.priority }),
     type: "content_run.advance",
+    requestId,
+    traceId,
     workspaceId,
   };
 }
@@ -278,6 +282,8 @@ describe("PostgreSQL durable jobs and outbox", () => {
       aggregateVersion: 2,
       eventType: "content_run.advance",
       payload: { contentRunId: "71000000-0000-4000-8000-000000000001", contentRunVersion: 2 },
+      requestId,
+      traceId,
       workspaceId,
     };
     try {
@@ -328,13 +334,15 @@ describe("PostgreSQL durable jobs and outbox", () => {
       await fixture.pool.query(
         `
           INSERT INTO outbox_events (
-            id, workspace_id, event_type, aggregate_type, aggregate_id,
+            id, workspace_id, request_id, trace_id, event_type, aggregate_type, aggregate_id,
             aggregate_version, payload, occurred_at
-          ) VALUES ($1, $2, 'content_run.advance', 'content_run', $3, 1, $4::jsonb, $5)
+          ) VALUES ($1, $2, $3, $4, 'content_run.advance', 'content_run', $5, 1, $6::jsonb, $7)
         `,
         [
           eventId,
           workspaceId,
+          requestId,
+          traceId,
           "71000000-0000-4000-8000-000000000001",
           JSON.stringify({ rawText: "synthetic-secret-sentinel" }),
           fixture.clock.now(),

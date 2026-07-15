@@ -1,10 +1,14 @@
 import type { Clock, IdGenerator } from "@serialos/application";
 import type { TransactionContext, TransactionManager } from "@serialos/db";
-import { asJobId, asWorkspaceId, type WorkspaceId } from "@serialos/domain";
+import { asJobId, asWorkspaceId, type RequestId, type WorkspaceId } from "@serialos/domain";
 
 import type { MinimalJobPayload } from "./job.js";
 import { emptyCheckpoint } from "./job.js";
-import { assertMinimalJobPayload } from "./validation.js";
+import {
+  assertMinimalJobPayload,
+  UnsafeJobDataError,
+  validateJobCorrelation,
+} from "./validation.js";
 
 export interface AppendOutboxEventInput {
   readonly aggregateId: string;
@@ -13,12 +17,16 @@ export interface AppendOutboxEventInput {
   readonly eventType: string;
   readonly payload: MinimalJobPayload;
   readonly payloadVersion?: number;
+  readonly requestId: RequestId;
+  readonly traceId: string;
   readonly workspaceId: WorkspaceId;
 }
 
 export interface DispatchedOutboxEvent {
   readonly eventId: string;
   readonly jobId: string;
+  readonly requestId: RequestId;
+  readonly traceId: string;
   readonly workspaceId: WorkspaceId;
 }
 
@@ -44,6 +52,7 @@ export class TransactionalOutbox {
     assertEventName(input.eventType, "Event type");
     assertEventName(input.aggregateType, "Aggregate type");
     assertMinimalJobPayload(input.payload);
+    const correlation = validateJobCorrelation(input.requestId, input.traceId);
     if (!Number.isInteger(input.aggregateVersion) || input.aggregateVersion < 1) {
       throw new RangeError("Aggregate version is invalid");
     }
@@ -55,15 +64,17 @@ export class TransactionalOutbox {
     const rows = await transaction.query<{ id: string }>(
       `
         INSERT INTO outbox_events (
-          id, workspace_id, event_type, aggregate_type, aggregate_id, aggregate_version,
-          payload_version, payload, occurred_at
+          id, workspace_id, request_id, trace_id, event_type, aggregate_type, aggregate_id,
+          aggregate_version, payload_version, payload, occurred_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11)
         RETURNING id
       `,
       [
         id,
         input.workspaceId,
+        correlation.requestId,
+        correlation.traceId,
         input.eventType,
         input.aggregateType,
         input.aggregateId,
@@ -85,6 +96,8 @@ interface OutboxRow {
   readonly event_type: string;
   readonly id: string;
   readonly payload: unknown;
+  readonly request_id: string | null;
+  readonly trace_id: string | null;
   readonly workspace_id: string;
 }
 
@@ -102,7 +115,7 @@ export class PostgresOutboxDispatcher {
   public async dispatchNext(): Promise<DispatchedOutboxEvent | undefined> {
     return this.#transactions.inTransaction(async (transaction) => {
       const events = await transaction.query<OutboxRow>(`
-        SELECT id, workspace_id, event_type, payload
+        SELECT id, workspace_id, request_id, trace_id, event_type, payload
         FROM outbox_events
         WHERE published_at IS NULL
         ORDER BY occurred_at, id
@@ -115,22 +128,28 @@ export class PostgresOutboxDispatcher {
       }
       assertEventName(event.event_type, "Event type");
       assertMinimalJobPayload(event.payload);
+      if (event.request_id === null || event.trace_id === null) {
+        throw new UnsafeJobDataError("Outbox event is missing required correlation");
+      }
+      const correlation = validateJobCorrelation(event.request_id, event.trace_id);
       const jobId = asJobId(this.#ids.generate());
       const now = this.#clock.now();
       const dedupeKey = `outbox:${event.id}`;
       const inserted = await transaction.query<{ id: string }>(
         `
           INSERT INTO jobs (
-            id, workspace_id, type, dedupe_key, payload, status, available_at,
-            checkpoint, created_at, updated_at
+            id, workspace_id, request_id, trace_id, type, dedupe_key, payload, status,
+            available_at, checkpoint, created_at, updated_at
           )
-          VALUES ($1, $2, $3, $4, $5::jsonb, 'queued', $6, $7::jsonb, $6, $6)
+          VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, 'queued', $8, $9::jsonb, $8, $8)
           ON CONFLICT DO NOTHING
           RETURNING id
         `,
         [
           jobId,
           event.workspace_id,
+          correlation.requestId,
+          correlation.traceId,
           event.event_type,
           dedupeKey,
           JSON.stringify(event.payload),
@@ -156,6 +175,8 @@ export class PostgresOutboxDispatcher {
       return {
         eventId: event.id,
         jobId: asJobId(durableJobId),
+        requestId: correlation.requestId,
+        traceId: correlation.traceId,
         workspaceId: asWorkspaceId(event.workspace_id),
       };
     });

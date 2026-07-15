@@ -139,6 +139,7 @@ describe("SQL migration history", () => {
       await expect(migrateDatabase(migratedUrl)).resolves.toEqual([
         "0001_baseline",
         "0002_foundation_runtime",
+        "0003_job_correlation",
       ]);
       await expect(migrateDatabase(migratedUrl)).resolves.toEqual([]);
       await canonicalPool.query(await readFile(canonicalSchemaPath, "utf8"));
@@ -156,7 +157,7 @@ describe("SQL migration history", () => {
     }
   });
 
-  it("upgrades 0001 data forward to 0002 without loss", async () => {
+  it("upgrades 0001 data forward to head without loss", async () => {
     const name = createDatabaseName();
     await createDatabase(name);
     const connectionString = databaseUrlFor(name);
@@ -180,17 +181,59 @@ describe("SQL migration history", () => {
       await pool.query(
         "INSERT INTO users (id, email) VALUES ('10000000-0000-4000-8000-000000000099', 'upgrade@example.test')",
       );
-      await expect(migrateDatabase(connectionString)).resolves.toEqual(["0002_foundation_runtime"]);
+      await pool.query(`
+        INSERT INTO workspaces (id, name, slug)
+        VALUES ('20000000-0000-4000-8000-000000000099', 'Upgrade workspace', 'upgrade-workspace')
+      `);
+      await pool.query(`
+        INSERT INTO outbox_events (
+          id, workspace_id, event_type, aggregate_type, aggregate_id, aggregate_version, payload
+        ) VALUES (
+          '94000000-0000-4000-8000-000000000099',
+          '20000000-0000-4000-8000-000000000099',
+          'foundation.verify',
+          'foundation',
+          '71000000-0000-4000-8000-000000000099',
+          1,
+          '{"foundationId":"71000000-0000-4000-8000-000000000099"}'::jsonb
+        )
+      `);
+      await pool.query(`
+        INSERT INTO jobs (id, workspace_id, type, payload)
+        VALUES (
+          '90000000-0000-4000-8000-000000000099',
+          '20000000-0000-4000-8000-000000000099',
+          'foundation.verify',
+          '{"foundationId":"71000000-0000-4000-8000-000000000099"}'::jsonb
+        )
+      `);
+      await expect(migrateDatabase(connectionString)).resolves.toEqual([
+        "0002_foundation_runtime",
+        "0003_job_correlation",
+      ]);
       const preserved = await pool.query<{ count: string }>(
         "SELECT count(*)::text AS count FROM users WHERE id = '10000000-0000-4000-8000-000000000099'",
       );
       const columns = await pool.query<{ column_name: string }>(`
         SELECT column_name FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'jobs'
-          AND column_name IN ('progress', 'current_step', 'checkpoint', 'cancel_requested_at', 'dead_lettered_at')
+          AND column_name IN (
+            'progress', 'current_step', 'checkpoint', 'cancel_requested_at', 'dead_lettered_at',
+            'request_id', 'trace_id'
+          )
+      `);
+      const correlations = await pool.query<{ request_id: string; trace_id: string }>(`
+        SELECT request_id::text, trace_id FROM jobs
+        UNION ALL
+        SELECT request_id::text, trace_id FROM outbox_events
       `);
       expect(preserved.rows[0]?.count).toBe("1");
-      expect(columns.rowCount).toBe(5);
+      expect(columns.rowCount).toBe(7);
+      expect(correlations.rows).toHaveLength(2);
+      for (const correlation of correlations.rows) {
+        expect(correlation.request_id).toMatch(/^[0-9a-f-]{36}$/u);
+        expect(correlation.trace_id).toMatch(/^migration:[0-9a-f-]{36}$/u);
+      }
     } finally {
       await pool.end();
       await dropDatabase(name);

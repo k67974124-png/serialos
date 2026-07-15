@@ -15,6 +15,13 @@
       "when": 2,
       "tag": "0002_foundation_runtime",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 3,
+      "tag": "0003_job_correlation",
+      "breakpoints": true
     }
   ]
 }

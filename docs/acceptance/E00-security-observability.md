@@ -2,7 +2,9 @@
 
 ## 结构化日志字段
 
-普通应用日志是换行分隔 JSON。稳定字段为 `event`、`time`、`level`，关联字段仅允许 `requestId`、`traceId`、`jobId`、`providerRequestId`、`workspaceId`，结果字段可使用 `result` 和 `durationMs`。在交给 Pino 前必须递归脱敏；不得记录 Authorization、Cookie、API key、access token、签名 URL、素材原文、标准化正文、转写、Prompt、邮件正文、采访回答、异常 stack 或异常原始 message。
+普通应用日志是换行分隔 JSON。稳定字段为 `event`、`time`、`level`，关联字段仅允许 `requestId`、`traceId`、`jobId`、`providerRequestId`、`workspaceId`，结果字段可使用 `result` 和 `durationMs`。UUID、标识符、非负时长及 E00 稳定结果/错误码允许列表均在运行时校验；未知字段或不合规值直接丢弃。在交给 Pino 前必须递归脱敏；不得记录 Authorization、Cookie、API key、access token、签名 URL、素材原文、标准化正文、转写、Prompt、邮件正文、采访回答、异常 stack 或异常原始 message。敏感键匹配先忽略大小写和分隔符，再覆盖 provider/服务前缀后的 `apiKey`、`secretKey`、`secretAccessKey`、token、password、cookie 和 signed URL 后缀；`content`、`material`、`transcription` 等原始内容键始终拒绝。不可枚举的未知对象替换为固定占位符，不能令 logger 崩溃或回退到原值。
+
+新 outbox/job 同时持久化 request ID 与 trace ID。Worker 只能记录这些关联 ID、状态和安全错误码，不记录 job payload；未注册 job type 进入 dead letter，不伪装成功。
 
 ## 审计字段
 

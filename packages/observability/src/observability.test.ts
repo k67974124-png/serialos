@@ -45,6 +45,45 @@ describe("observability safety primitives", () => {
     expect(serialized).toContain("[REDACTED_SIGNED_URL]");
   });
 
+  it("redacts credential and creator-content key variants reported by independent acceptance", () => {
+    const sentinel = "SYNTHETIC_CREDENTIAL_SENTINEL_7788";
+    const fixture = {
+      S3_SECRET_ACCESS_KEY: sentinel,
+      content: sentinel,
+      material: sentinel,
+      nested: [{ openai_api_key: sentinel }, { secretKey: sentinel }, { TRANSCRIPTION: sentinel }],
+    };
+
+    const serialized = JSON.stringify(redactLogValue(fixture));
+    expect(serialized).not.toContain(sentinel);
+    expect(serialized.match(/\[REDACTED\]/gu)).toHaveLength(6);
+  });
+
+  it("does not let an unknown object crash structured logging", () => {
+    const lines: string[] = [];
+    const logger = new StructuredLogger(
+      { write: (line) => lines.push(line) },
+      { now: () => new Date("2026-07-13T00:00:00.000Z") },
+    );
+    const unknownObject = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          throw new Error("synthetic proxy failure");
+        },
+      },
+    );
+
+    expect(() => {
+      logger.log("warn", "logging.unknown_object", {
+        result: unknownObject,
+      } as unknown as Parameters<StructuredLogger["log"]>[2]);
+    }).not.toThrow();
+    expect(lines).toHaveLength(1);
+    expect(parseLog(lines[0] ?? "")).toMatchObject({ event: "logging.unknown_object" });
+    expect(lines[0]).not.toContain("synthetic proxy failure");
+  });
+
   it("writes one deterministic JSON event with correlation and no signed URL", () => {
     const lines: string[] = [];
     const logger = new StructuredLogger(
@@ -54,16 +93,53 @@ describe("observability safety primitives", () => {
     logger.log("info", "storage.signed_read", {
       jobId: "00000000-0000-4000-8000-000000000071",
       requestId: "00000000-0000-4000-8000-000000000072",
+      result: "rejected",
       signedUrl: "https://objects.example.test/a?X-Amz-Signature=private",
       traceId: "trace-1",
-    });
+    } as unknown as Parameters<StructuredLogger["log"]>[2]);
 
     expect(lines).toHaveLength(1);
     const entry = parseLog(lines[0] ?? "");
     expect(entry.event).toBe("storage.signed_read");
     expect(entry.time).toBe("2026-07-13T00:00:00.000Z");
-    expect(entry.signedUrl).toBe("[REDACTED]");
+    expect(entry.result).toBe("rejected");
     expect(lines[0]).not.toContain("X-Amz-Signature");
+  });
+
+  it("drops fields outside the documented structured-log allowlist", () => {
+    const sentinel = "RAW_CREATOR_SENTINEL";
+    const lines: string[] = [];
+    const logger = new StructuredLogger(
+      { write: (line) => lines.push(line) },
+      { now: () => new Date("2026-07-13T00:00:00.000Z") },
+    );
+    logger.log("info", "content.rejected", {
+      requestId: "00000000-0000-4000-8000-000000000072",
+      result: "rejected",
+      article: sentinel,
+      creatorNote: sentinel,
+    } as unknown as Parameters<StructuredLogger["log"]>[2]);
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).not.toContain(sentinel);
+    expect(lines[0]).not.toContain("article");
+    expect(lines[0]).not.toContain("creatorNote");
+    expect(parseLog(lines[0] ?? "")).toMatchObject({ result: "rejected" });
+  });
+
+  it("drops raw text smuggled through an allowed structured-log key", () => {
+    const sentinel = "RAW_CREATOR_SENTINEL";
+    const lines: string[] = [];
+    const logger = new StructuredLogger(
+      { write: (line) => lines.push(line) },
+      { now: () => new Date("2026-07-13T00:00:00.000Z") },
+    );
+
+    logger.log("error", "content.rejected", { result: sentinel });
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).not.toContain(sentinel);
+    expect(parseLog(lines[0] ?? "")).not.toHaveProperty("result");
   });
 
   it("preserves request-to-job-to-provider correlation", () => {

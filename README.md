@@ -29,6 +29,17 @@ PowerShell 中复制环境文件：
 Copy-Item .env.example .env
 ```
 
+若 Windows 上的 Node/NVM 安装目录不可写，裸 `corepack enable` 会因无法创建全局 shim 而返回 `EPERM`。使用仓库本地 shim，不需要管理员权限：
+
+```powershell
+New-Item -ItemType Directory -Force .corepack-bin | Out-Null
+corepack enable --install-directory .corepack-bin
+$env:PATH = "$(Resolve-Path .corepack-bin);$env:PATH"
+pnpm install --frozen-lockfile
+```
+
+`.corepack-bin` 已被忽略，不得提交。CI 使用 pnpm 官方 standalone action，并显式固定为 `11.12.0`，不依赖 runner 预装 Node.js 来启动 pnpm。
+
 `.env.example` 仅包含本地开发值和空的 provider key。不要把真实密钥提交到仓库。
 
 ## 启动本地开发环境
@@ -55,6 +66,8 @@ pnpm dev
 - MinIO 控制台：<http://127.0.0.1:59011>
 - Mailpit：<http://127.0.0.1:58024>
 
+Web 与 Worker readiness 同时检查 PostgreSQL 连接、durable queue claim/update 能力和对象存储。数据库可连接但 migration/`jobs` 表缺失时，liveness 仍为 `200`，readiness 必须为 `503` 且只暴露 `queue=unavailable`。
+
 就绪检查会真实探测 PostgreSQL 与 MinIO；依赖不可用时返回经过清理的 `503`，存活检查仍独立工作。
 
 ## 验证与测试
@@ -73,7 +86,7 @@ pnpm build
 pnpm dependency:check
 ```
 
-集成测试、浏览器测试和烟雾测试使用独立的 `serialos-test` Compose 项目，不会复用开发数据库或 bucket：
+集成测试、浏览器测试和烟雾测试使用独立的 `serialos-test` Compose 项目，不会复用开发数据库或 bucket。Integration case 会创建、迁移和删除各自的临时数据库，不依赖共享测试库已迁移。`pnpm test:e2e` 会先校验并迁移隔离测试数据库，再通过锁定的 pnpm 入口启动浏览器测试 Web，并在测试结束后退出：
 
 ```bash
 pnpm infra:test:up
@@ -84,7 +97,7 @@ pnpm smoke
 pnpm infra:test:down
 ```
 
-`pnpm smoke` 会执行生产构建，运行迁移与种子，启动生产模式 Web 和 Worker，并完成 Web/Worker 健康检查、PostgreSQL 回环以及 MinIO 写入/读取/删除回环。`pnpm ci:prove-failures` 在临时目录中故意破坏 Schema、TypeScript 类型和 migration checksum；只有三项均因预期原因失败且临时文件已删除时，该命令才成功。
+`pnpm smoke` 会执行生产构建，运行迁移与种子，启动生产模式 Web 和 Worker，完成 PostgreSQL 与 MinIO 写入/读取/删除回环，并在隔离的 `serialos-test` 栈中停止 PostgreSQL，证明 Web/Worker liveness 保持 `200`、readiness 变为 `503`，随后重启数据库并证明 readiness 恢复为 `200`。`pnpm ci:prove-failures` 在临时目录中故意破坏 Schema、TypeScript 类型和 migration checksum；只有三项均因预期原因失败且临时文件已删除时，该命令才成功。
 
 完整本地发布门禁：
 

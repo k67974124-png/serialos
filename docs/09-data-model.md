@@ -477,8 +477,9 @@ MVP 只有 owner，但保留：
 
 ### jobs 与 outbox_events
 
-- `jobs` 是异步执行的持久化事实，保存 attempt、锁、heartbeat、progress、current_step、checkpoint、取消请求、dead-letter 时间和资源引用；
-- `outbox_events` 与业务事务一起写入，由 Worker 至少一次投递；
+- `jobs` 是异步执行的持久化事实，保存 request_id、trace_id、attempt、锁、heartbeat、progress、current_step、checkpoint、取消请求、dead-letter 时间和资源引用；
+- `outbox_events` 与业务事务一起写入，并保存创建请求的 request_id/trace_id，由 Worker 至少一次投递；
+- 新的应用写入必须同时提供 request_id 与 trace_id；前向迁移为旧行生成明确带 `migration:` 前缀的迁移 correlation，再将两列收紧为 `NOT NULL`，避免遗留 durable work 因缺少链路字段永久阻塞；
 - 消费者必须通过 event ID 或业务幂等键去重。
 
 ### ai_calls

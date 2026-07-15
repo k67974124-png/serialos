@@ -1,4 +1,4 @@
-import type { JobLease } from "./job.js";
+import { JobExecutionError, JobStateConflictError, type JobLease } from "./job.js";
 import type { JobQueue } from "./postgres-job-queue.js";
 
 export type JobHandler = (lease: JobLease, signal: AbortSignal) => Promise<void>;
@@ -91,8 +91,12 @@ export class GracefulWorkerRuntime {
         await this.#queue.releaseLease(active.lease);
         return;
       }
-      await this.#queue.retry(active.lease, { code: "JOB_HANDLER_FAILED", retryable: true });
-      if (error instanceof Error && error.name === "JobStateConflictError") {
+      const safeError =
+        error instanceof JobExecutionError
+          ? error.safeError
+          : { code: "JOB_HANDLER_FAILED", retryable: true };
+      await this.#queue.retry(active.lease, safeError);
+      if (error instanceof JobStateConflictError) {
         throw error;
       }
     }

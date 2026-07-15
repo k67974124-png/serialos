@@ -42,6 +42,8 @@ export const materialItems = pgTable("material_items", {
 export const outboxEvents = pgTable("outbox_events", {
   id: uuid("id").primaryKey(),
   workspaceId: uuid("workspace_id").notNull(),
+  requestId: uuid("request_id").notNull(),
+  traceId: text("trace_id").notNull(),
   eventType: text("event_type").notNull(),
   aggregateType: text("aggregate_type").notNull(),
   aggregateId: uuid("aggregate_id").notNull(),
@@ -56,6 +58,8 @@ export const outboxEvents = pgTable("outbox_events", {
 export const jobs = pgTable("jobs", {
   id: uuid("id").primaryKey(),
   workspaceId: uuid("workspace_id").notNull(),
+  requestId: uuid("request_id").notNull(),
+  traceId: text("trace_id").notNull(),
   type: text("type").notNull(),
   dedupeKey: text("dedupe_key"),
   payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),

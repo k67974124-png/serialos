@@ -14,7 +14,12 @@ import {
   type RetryResult,
   type SafeJobError,
 } from "./job.js";
-import { assertJobCheckpoint, assertMinimalJobPayload, assertSafeJobError } from "./validation.js";
+import {
+  assertJobCheckpoint,
+  assertMinimalJobPayload,
+  assertSafeJobError,
+  validateJobCorrelation,
+} from "./validation.js";
 
 interface JobRow {
   readonly attempt: number;
@@ -25,7 +30,9 @@ interface JobRow {
   readonly max_attempts: number;
   readonly payload: unknown;
   readonly progress: string;
+  readonly request_id: string;
   readonly status: JobStatus;
+  readonly trace_id: string;
   readonly type: string;
   readonly workspace_id: string;
 }
@@ -39,6 +46,7 @@ interface RetryStateRow {
 function toLease(row: JobRow): JobLease {
   assertMinimalJobPayload(row.payload);
   assertJobCheckpoint(row.checkpoint);
+  const correlation = validateJobCorrelation(row.request_id, row.trace_id);
   return {
     attempt: row.attempt,
     checkpoint: row.checkpoint,
@@ -48,7 +56,9 @@ function toLease(row: JobRow): JobLease {
     maxAttempts: row.max_attempts,
     payload: row.payload,
     progress: Number(row.progress),
+    requestId: correlation.requestId,
     status: row.status,
+    traceId: correlation.traceId,
     type: row.type,
     workspaceId: asWorkspaceId(row.workspace_id),
   };
@@ -97,6 +107,7 @@ export class PostgresJobQueue implements JobQueue {
   public async enqueue(input: EnqueueJobInput): Promise<JobReference> {
     assertJobType(input.type);
     assertMinimalJobPayload(input.payload);
+    const correlation = validateJobCorrelation(input.requestId, input.traceId);
     const id = asJobId(this.#ids.generate());
     const availableAt = input.availableAt ?? this.#clock.now();
     const maxAttempts = input.maxAttempts ?? 5;
@@ -122,16 +133,18 @@ export class PostgresJobQueue implements JobQueue {
       }>(
         `
           INSERT INTO jobs (
-            id, workspace_id, type, dedupe_key, payload, status, priority, max_attempts,
-            available_at, checkpoint, created_at, updated_at
+            id, workspace_id, request_id, trace_id, type, dedupe_key, payload, status,
+            priority, max_attempts, available_at, checkpoint, created_at, updated_at
           )
-          VALUES ($1, $2, $3, $4, $5::jsonb, 'queued', $6, $7, $8, $9::jsonb, $10, $10)
+          VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, 'queued', $8, $9, $10, $11::jsonb, $12, $12)
           ON CONFLICT DO NOTHING
           RETURNING id, workspace_id, status
         `,
         [
           id,
           input.workspaceId,
+          correlation.requestId,
+          correlation.traceId,
           input.type,
           input.dedupeKey ?? null,
           JSON.stringify(input.payload),
@@ -228,8 +241,9 @@ export class PostgresJobQueue implements JobQueue {
               attempt = job.attempt + 1, updated_at = $1
           FROM candidate
           WHERE job.id = candidate.id
-          RETURNING job.id, job.workspace_id, job.type, job.payload, job.status, job.attempt,
-                    job.max_attempts, job.locked_by, job.progress::text, job.current_step, job.checkpoint
+          RETURNING job.id, job.workspace_id, job.request_id, job.trace_id, job.type, job.payload,
+                    job.status, job.attempt, job.max_attempts, job.locked_by, job.progress::text,
+                    job.current_step, job.checkpoint
         `,
         [now, expiredBefore, workerId],
       );

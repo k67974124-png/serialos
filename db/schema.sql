@@ -1073,6 +1073,8 @@ CREATE TABLE idempotency_keys (
 CREATE TABLE outbox_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  request_id uuid NOT NULL,
+  trace_id text NOT NULL,
   event_type text NOT NULL,
   aggregate_type text NOT NULL,
   aggregate_id uuid NOT NULL,
@@ -1082,13 +1084,19 @@ CREATE TABLE outbox_events (
   occurred_at timestamptz NOT NULL DEFAULT now(),
   published_at timestamptz,
   attempts integer NOT NULL DEFAULT 0,
-  last_error text
+  last_error text,
+  CONSTRAINT outbox_correlation_pair CHECK (num_nonnulls(request_id, trace_id) IN (0, 2)),
+  CONSTRAINT outbox_trace_id_format CHECK (
+    trace_id ~ '^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$'
+  )
 );
 CREATE INDEX outbox_unpublished_idx ON outbox_events(occurred_at) WHERE published_at IS NULL;
 
 CREATE TABLE jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id uuid NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+  request_id uuid NOT NULL,
+  trace_id text NOT NULL,
   type text NOT NULL,
   dedupe_key text,
   payload jsonb NOT NULL,
@@ -1110,7 +1118,11 @@ CREATE TABLE jobs (
   updated_at timestamptz NOT NULL DEFAULT now(),
   completed_at timestamptz,
   CONSTRAINT job_attempts CHECK (attempt >= 0 AND max_attempts > 0),
-  CONSTRAINT jobs_progress_range CHECK (progress >= 0 AND progress <= 1)
+  CONSTRAINT jobs_progress_range CHECK (progress >= 0 AND progress <= 1),
+  CONSTRAINT jobs_correlation_pair CHECK (num_nonnulls(request_id, trace_id) IN (0, 2)),
+  CONSTRAINT jobs_trace_id_format CHECK (
+    trace_id ~ '^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$'
+  )
 );
 CREATE UNIQUE INDEX jobs_dedupe_active_unique
   ON jobs(workspace_id, type, dedupe_key)
@@ -1118,6 +1130,9 @@ CREATE UNIQUE INDEX jobs_dedupe_active_unique
 CREATE INDEX jobs_available_idx
   ON jobs(priority DESC, available_at, created_at)
   WHERE status IN ('queued', 'retry_scheduled');
+CREATE INDEX jobs_request_idx
+  ON jobs(workspace_id, request_id, created_at)
+  WHERE request_id IS NOT NULL;
 
 CREATE TABLE workspace_deletions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -20,6 +20,8 @@ SerialOS requires durable, idempotent and retryable work with heartbeat, checkpo
 - Dispatch outbox events by inserting/deduplicating the target job and marking the event published in the same PostgreSQL transaction.
 - Keep payloads minimal and ID-based; do not store raw creator content in job/outbox payloads.
 - Use event IDs and explicit business idempotency keys to suppress duplicate local side effects.
+- Persist `request_id` and `trace_id` on outbox events and jobs through forward migration `0003_job_correlation`. Application enqueue/append APIs require both values. Legacy durable rows receive a generated migration request ID and an explicit `migration:<row-id>` trace before both columns become `NOT NULL`, so the backfill is identifiable and existing work remains claimable.
+- Run the PostgreSQL outbox dispatcher and bounded claim loops in the production Worker composition root. Registered handlers receive the persisted correlation; unknown job types fail closed as non-retryable dead letters instead of returning fake success.
 
 ## Alternatives considered
 
@@ -35,6 +37,7 @@ SerialOS requires durable, idempotent and retryable work with heartbeat, checkpo
 - Handlers must poll cancellation and persist checkpoint at safe boundaries.
 - At-least-once delivery remains the transport guarantee; exactly-once external effects require provider IDs and reconciliation in later Epics.
 - Queue replacement remains possible behind `JobQueue`, but requires an ADR and migration strategy.
+- Readiness includes a zero-row claim/update capability probe, so a reachable but unmigrated or under-privileged database is not reported ready.
 
 ## Validation
 
@@ -46,4 +49,4 @@ SerialOS requires durable, idempotent and retryable work with heartbeat, checkpo
 - duplicate outbox delivery produces one active job/local effect;
 - worker graceful shutdown stops claims and persists/relinquishes work safely;
 - payload/log fixtures contain no raw creator content.
-
+- production Worker integration dispatches an outbox event, claims supported and unsupported jobs, persists terminal states, and emits request/job/trace correlation without payload fields.

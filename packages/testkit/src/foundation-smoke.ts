@@ -66,6 +66,10 @@ function runPnpm(args: readonly string[]): void {
   run(process.execPath, [pnpmEntrypoint, ...args]);
 }
 
+function runTestCompose(args: readonly string[]): void {
+  run("docker", ["compose", "-p", "serialos-test", "-f", "compose.test.yaml", ...args]);
+}
+
 function startNode(args: readonly string[], cwd = repositoryRoot): ChildProcess {
   const child = spawn(process.execPath, [...args], {
     cwd,
@@ -96,14 +100,14 @@ async function stopProcess(child: ChildProcess): Promise<void> {
   }
 }
 
-async function waitForHealth(url: string): Promise<void> {
+async function waitForStatus(url: string, expectedStatus: number): Promise<void> {
   const deadline = Date.now() + 60_000;
   let latest = "no response";
   while (Date.now() < deadline) {
     try {
       const response = await fetch(url, { signal: AbortSignal.timeout(2_000) });
       latest = `${String(response.status)} ${await response.text()}`;
-      if (response.ok) {
+      if (response.status === expectedStatus) {
         return;
       }
     } catch (error) {
@@ -111,7 +115,11 @@ async function waitForHealth(url: string): Promise<void> {
     }
     await new Promise<void>((resolve) => setTimeout(resolve, 500));
   }
-  throw new Error(`Health check failed for ${url}: ${latest}`);
+  throw new Error(`Expected HTTP ${String(expectedStatus)} from ${url}: ${latest}`);
+}
+
+async function waitForHealth(url: string): Promise<void> {
+  await waitForStatus(url, 200);
 }
 
 async function databaseRoundTrip(): Promise<void> {
@@ -175,17 +183,36 @@ async function main(): Promise<void> {
   );
   const web = startNode([standaloneServer], path.dirname(standaloneServer));
   const worker = startNode([path.join(repositoryRoot, "apps", "worker", "dist", "main.js")]);
+  let postgresStopped = false;
   try {
     await waitForHealth(`http://127.0.0.1:${String(webPort)}/health/live`);
     await waitForHealth(`http://127.0.0.1:${String(webPort)}/health/ready`);
     await waitForHealth(`http://127.0.0.1:${String(workerPort)}/health/live`);
     await waitForHealth(`http://127.0.0.1:${String(workerPort)}/health/ready`);
+    process.stdout.write("Readiness baseline passed: Web/Worker live=200 ready=200.\n");
+
+    runTestCompose(["stop", "postgres"]);
+    postgresStopped = true;
+    await waitForHealth(`http://127.0.0.1:${String(webPort)}/health/live`);
+    await waitForStatus(`http://127.0.0.1:${String(webPort)}/health/ready`, 503);
+    await waitForHealth(`http://127.0.0.1:${String(workerPort)}/health/live`);
+    await waitForStatus(`http://127.0.0.1:${String(workerPort)}/health/ready`, 503);
+    process.stdout.write("Readiness outage passed: Web/Worker live=200 ready=503.\n");
+
+    runTestCompose(["start", "postgres"]);
+    postgresStopped = false;
+    await waitForHealth(`http://127.0.0.1:${String(webPort)}/health/ready`);
+    await waitForHealth(`http://127.0.0.1:${String(workerPort)}/health/ready`);
+    process.stdout.write("Readiness recovery passed: Web/Worker ready=200.\n");
   } finally {
+    if (postgresStopped) {
+      runTestCompose(["start", "postgres"]);
+    }
     await Promise.all([stopProcess(web), stopProcess(worker)]);
   }
 
   process.stdout.write(
-    "Foundation smoke passed: production Web, Worker, PostgreSQL, and object storage.\n",
+    "Foundation smoke passed: production Web, Worker, PostgreSQL failure/recovery, and object storage.\n",
   );
 }
 
