@@ -510,7 +510,7 @@ Close independent findings B-001, M-001 through M-004 and the repository-actiona
 |---|---|---|
 | B-001 log leakage | Normalize key separators/case; cover provider-prefixed credential suffixes and raw `content`/`material`/`transcription`; replace unserializable objects with a fixed marker | Reported sentinels absent from processor/logger output; unknown proxy cannot crash logging |
 | M-001 Windows contract drift | Add repository LF attributes for canonical/generated text assets | `core.autocrlf=true` Git archive and clone contain LF generated output; frozen install and contract drift gate pass |
-| M-002 hosted CI bootstrap | Hosted runs `29383770894` and `29385424074` disproved both pnpm-action bootstrap paths; superseding section 21 installs pinned Node, installs exact `pnpm@11.12.0` with npm, then restores the pnpm store with a pinned cache action | Local workflow/regression checks must pass; a new exact-commit hosted run remains required after commit/push |
+| M-002 hosted CI bootstrap | Hosted runs `29383770894` and `29385424074` disproved both pnpm-action bootstrap paths; superseding section 21 installs pinned Node, installs exact `pnpm@11.12.0` with npm, then restores the pnpm store with a pinned cache action | Local workflow/regression checks passed; exact commit `2d575b56...` passed hosted run `29385757515`, including cleanup and post-actions |
 | M-003 false readiness | Add a separate queue probe that validates the zero-row PostgreSQL claim/update path | Migrated database ready; reachable empty database returns queue unavailable/HTTP 503 while liveness remains 200 |
 | M-004 Worker/correlation gap | Add forward `0003_job_correlation`; require correlation on new enqueue/outbox writes; compose PostgreSQL outbox/claim loops in the actual Worker; dead-letter unknown types | Real PostgreSQL integration proves outbox dispatch, supported success, unknown-type dead letter, bounded shutdown and persisted/logged request/job/trace IDs |
 | U-001 global Corepack permission | Document and verify repository-local Corepack shims; hosted CI uses pinned setup actions and does not modify a global developer Corepack installation | Local shim enables pnpm 11.12.0 and frozen install without administrator access |
@@ -661,3 +661,13 @@ Revert the workflow, verifier and documentation changes together. There is no
 database, object-storage, job or product-state rollback. Do not restore either
 failed pnpm-action bootstrap path; keep E00 in `verification` if the direct
 installation path also fails in hosted CI.
+
+### Hosted verification outcome
+
+Exact commit `2d575b56b27f22e574783fe0aaa010f4377781b6` was pushed to
+`main`. GitHub Actions run `29385757515` (`E00 foundation CI #4`) completed with
+conclusion `success`. Pinned Node setup, direct pnpm installation, store caching,
+frozen dependency installation, all E00 gates, browser/production smoke,
+dependency cleanup and every post-action passed. M-002 is closed; the task remains
+in `verification`, E01 remains not started, and a new independent acceptance is
+still required before changing task state to `accepted`.
