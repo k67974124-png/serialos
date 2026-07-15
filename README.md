@@ -38,7 +38,7 @@ $env:PATH = "$(Resolve-Path .corepack-bin);$env:PATH"
 pnpm install --frozen-lockfile
 ```
 
-`.corepack-bin` 已被忽略，不得提交。CI 使用 pnpm 官方 standalone action，并显式固定为 `11.12.0`，不依赖 runner 预装 Node.js 来启动 pnpm。
+`.corepack-bin` 已被忽略，不得提交。CI 先通过固定 SHA 的 `actions/setup-node` 安装 `.nvmrc` 中的 Node.js，再通过固定 SHA 的 `pnpm/action-setup` 安装普通 Node-backed `pnpm@11.12.0`；pnpm action 使用 `pnpm-lock.yaml` 管理依赖缓存，不使用 `@pnpm/exe` standalone 路径。
 
 `.env.example` 仅包含本地开发值和空的 provider key。不要把真实密钥提交到仓库。
 

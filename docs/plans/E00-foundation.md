@@ -510,10 +510,10 @@ Close independent findings B-001, M-001 through M-004 and the repository-actiona
 |---|---|---|
 | B-001 log leakage | Normalize key separators/case; cover provider-prefixed credential suffixes and raw `content`/`material`/`transcription`; replace unserializable objects with a fixed marker | Reported sentinels absent from processor/logger output; unknown proxy cannot crash logging |
 | M-001 Windows contract drift | Add repository LF attributes for canonical/generated text assets | `core.autocrlf=true` Git archive and clone contain LF generated output; frozen install and contract drift gate pass |
-| M-002 hosted CI bootstrap | Configure the pinned pnpm action in standalone mode with explicit `11.12.0`; self-check requires both inputs | Local workflow self-check and every declared gate pass; a new hosted run remains required after commit/push |
+| M-002 hosted CI bootstrap | The initial standalone remediation was disproved by hosted run `29383770894`; superseding section 20 installs pinned Node before regular `pnpm@11.12.0` and gives the pnpm action lockfile caching | Local workflow/regression checks must pass; a new exact-commit hosted run remains required after commit/push |
 | M-003 false readiness | Add a separate queue probe that validates the zero-row PostgreSQL claim/update path | Migrated database ready; reachable empty database returns queue unavailable/HTTP 503 while liveness remains 200 |
 | M-004 Worker/correlation gap | Add forward `0003_job_correlation`; require correlation on new enqueue/outbox writes; compose PostgreSQL outbox/claim loops in the actual Worker; dead-letter unknown types | Real PostgreSQL integration proves outbox dispatch, supported success, unknown-type dead letter, bounded shutdown and persisted/logged request/job/trace IDs |
-| U-001 global Corepack permission | Document and verify repository-local Corepack shims; CI avoids runner Node bootstrap dependency | Local shim enables pnpm 11.12.0 and frozen install without administrator access |
+| U-001 global Corepack permission | Document and verify repository-local Corepack shims; hosted CI uses pinned setup actions and does not modify a global developer Corepack installation | Local shim enables pnpm 11.12.0 and frozen install without administrator access |
 
 ### Data, security and rollback
 
@@ -570,3 +570,44 @@ Close E00-ACC-MAJ-001 and the repository-actionable E00-ACC-UNV-002 from the lat
 - Rollback restores Playwright-managed dev Web startup and removes the fault-injection phase; no data migration or persistent schema rollback is involved.
 - The isolated PostgreSQL container is restarted in `finally` if a fault assertion fails, and normal cleanup still removes the project-scoped containers and volumes.
 - Run E2E runner regressions, transaction failure regression, full unit/integration/E2E/build/smoke gates, then repeat from a new clean-room copy before independent acceptance.
+
+## 20. Hosted-CI pnpm bootstrap remediation (2026-07-15)
+
+### Objective and boundary
+
+Repair E00-S08 after hosted run `29383770894` proved that `standalone: true` left
+`@pnpm/exe@11.12.0` with its placeholder `pnpm` entrypoint. The push itself
+succeeded, but `actions/setup-node` could not query pnpm for cache restoration and
+the workflow stopped before dependency installation or any repository test. This
+change remains limited to CI bootstrap order, its executable declaration check and
+the corresponding README/acceptance evidence. It does not start E01 or change any
+runtime, data, API, Worker or UI behavior.
+
+### Decision
+
+- Install the pinned Node version before pnpm so `pnpm/action-setup` can use the
+  regular Node-backed `pnpm@11.12.0` package instead of `@pnpm/exe`.
+- Move lockfile-based pnpm store caching to `pnpm/action-setup@v6`, whose pinned
+  action already owns cache restore/save, and remove pnpm caching from the first
+  `actions/setup-node` invocation.
+- Keep every action pinned to the existing full release commit SHA. No dependency
+  version, action version or ADR changes are required.
+
+### Regression and verification
+
+1. Extend `pnpm ci:verify-workflow` to require `setup-node` before
+   `pnpm/action-setup`, reject `standalone: true`, require the pinned pnpm version,
+   and require action-owned lockfile caching.
+2. Run `pnpm ci:verify-workflow`, `pnpm format:check`, `pnpm lint`,
+   `pnpm typecheck`, `pnpm test` and `pnpm build` locally.
+3. Inspect `git diff --check` and the final scoped diff.
+4. A new exact-commit hosted run remains mandatory after commit and push; local
+   declaration checks cannot replace that evidence.
+
+### Rollback
+
+Revert the workflow, verifier and documentation changes together. No database,
+object-storage, job, secret or generated artifact rollback is involved. Do not
+restore the failed standalone bootstrap as an accepted baseline; if this ordering
+also fails in hosted CI, keep E00 in `verification` and choose another reviewed,
+pinned bootstrap path.
