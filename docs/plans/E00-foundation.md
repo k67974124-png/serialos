@@ -510,7 +510,7 @@ Close independent findings B-001, M-001 through M-004 and the repository-actiona
 |---|---|---|
 | B-001 log leakage | Normalize key separators/case; cover provider-prefixed credential suffixes and raw `content`/`material`/`transcription`; replace unserializable objects with a fixed marker | Reported sentinels absent from processor/logger output; unknown proxy cannot crash logging |
 | M-001 Windows contract drift | Add repository LF attributes for canonical/generated text assets | `core.autocrlf=true` Git archive and clone contain LF generated output; frozen install and contract drift gate pass |
-| M-002 hosted CI bootstrap | The initial standalone remediation was disproved by hosted run `29383770894`; superseding section 20 installs pinned Node before regular `pnpm@11.12.0` and gives the pnpm action lockfile caching | Local workflow/regression checks must pass; a new exact-commit hosted run remains required after commit/push |
+| M-002 hosted CI bootstrap | Hosted runs `29383770894` and `29385424074` disproved both pnpm-action bootstrap paths; superseding section 21 installs pinned Node, installs exact `pnpm@11.12.0` with npm, then restores the pnpm store with a pinned cache action | Local workflow/regression checks must pass; a new exact-commit hosted run remains required after commit/push |
 | M-003 false readiness | Add a separate queue probe that validates the zero-row PostgreSQL claim/update path | Migrated database ready; reachable empty database returns queue unavailable/HTTP 503 while liveness remains 200 |
 | M-004 Worker/correlation gap | Add forward `0003_job_correlation`; require correlation on new enqueue/outbox writes; compose PostgreSQL outbox/claim loops in the actual Worker; dead-letter unknown types | Real PostgreSQL integration proves outbox dispatch, supported success, unknown-type dead letter, bounded shutdown and persisted/logged request/job/trace IDs |
 | U-001 global Corepack permission | Document and verify repository-local Corepack shims; hosted CI uses pinned setup actions and does not modify a global developer Corepack installation | Local shim enables pnpm 11.12.0 and frozen install without administrator access |
@@ -611,3 +611,53 @@ object-storage, job, secret or generated artifact rollback is involved. Do not
 restore the failed standalone bootstrap as an accepted baseline; if this ordering
 also fails in hosted CI, keep E00 in `verification` and choose another reviewed,
 pinned bootstrap path.
+
+### Hosted outcome (superseded)
+
+Hosted run `29385424074` for exact commit
+`ff20ad857b13a2bb54045ba91f5af7d9ca0e9d5b` failed inside
+`pnpm/action-setup@v6.0.8` before dependency installation. Reproducing the
+action's self-update sequence locally (`pnpm@11.1.1` then
+`pnpm self-update 11.12.0`) produced `Cannot use 'in' operator to search for
+'integrity' in undefined` and exit code `1`. The Node-first ordering is valid,
+but the action's self-installer is not a usable bootstrap for this repository.
+
+## 21. Hosted-CI pnpm self-update remediation (2026-07-15)
+
+### Objective and boundary
+
+Remove the hosted-only self-update failure while retaining exact tool versions,
+full-SHA action pinning and lockfile-keyed caching. This change is limited to the
+E00-S08 workflow bootstrap, its executable contract tests and supporting
+documentation. It does not change application/runtime behavior, start E01 or
+alter the `verification` task state.
+
+### Decision
+
+- After pinned `actions/setup-node`, run
+  `npm install --global pnpm@11.12.0`. npm is already supplied by the pinned Node
+  runtime and installs the exact package without invoking pnpm's self-update.
+- Resolve the store path with the installed pnpm and restore it using
+  `actions/cache@v5.0.5`, pinned to full commit
+  `27d5ce7f107fe9357f9df03efb73ab90386fccae`.
+- Key the cache by runner OS, `.nvmrc`, pnpm `11.12.0` and
+  `pnpm-lock.yaml`. Reject any reintroduction of `pnpm/action-setup` in the
+  workflow contract.
+
+### Regression and verification
+
+1. The workflow contract must require Node -> exact pnpm install -> store-path
+   resolution -> pinned cache ordering.
+2. Regression tests must reject `pnpm/action-setup`, reversed Node/pnpm order
+   and a cache step that loses the resolved store path.
+3. Run format, lint, typecheck, unit, specification, contract and build gates
+   locally, then inspect the final diff.
+4. Commit and push the candidate, then require the exact-commit hosted run and
+   cleanup step to finish successfully. Local evidence alone cannot close M-002.
+
+### Rollback
+
+Revert the workflow, verifier and documentation changes together. There is no
+database, object-storage, job or product-state rollback. Do not restore either
+failed pnpm-action bootstrap path; keep E00 in `verification` if the direct
+installation path also fails in hosted CI.

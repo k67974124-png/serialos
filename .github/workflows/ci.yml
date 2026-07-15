@@ -38,12 +38,20 @@ jobs:
         with:
           node-version-file: .nvmrc
 
-      - name: Install pinned pnpm and restore pnpm cache
-        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@11.12.0
+
+      - name: Resolve pnpm store path
+        id: pnpm-cache
+        shell: bash
+        run: echo "store_path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore pnpm cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          version: 11.12.0
-          cache: true
-          cache_dependency_path: pnpm-lock.yaml
+          path: ${{ steps.pnpm-cache.outputs.store_path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('.nvmrc') }}-11.12.0-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-${{ hashFiles('.nvmrc') }}-11.12.0-
 
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile

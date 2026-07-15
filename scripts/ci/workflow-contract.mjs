@@ -45,34 +45,68 @@ function findActionStep(workflow, actionName) {
   };
 }
 
+function findStepContaining(workflow, marker) {
+  const lines = workflow.split(/\r?\n/u);
+  const markerIndex = lines.findIndex((line) => line.includes(marker));
+  if (markerIndex < 0) {
+    throw new Error(`CI workflow is missing required step content: ${marker}`);
+  }
+
+  let startIndex = markerIndex;
+  while (startIndex >= 0 && !/^\s{6}-\s+/u.test(lines[startIndex] ?? "")) {
+    startIndex -= 1;
+  }
+  if (startIndex < 0) {
+    throw new Error(`CI workflow has an invalid step containing: ${marker}`);
+  }
+
+  let endIndex = markerIndex + 1;
+  while (endIndex < lines.length && !/^\s{6}-\s+/u.test(lines[endIndex] ?? "")) {
+    endIndex += 1;
+  }
+
+  return {
+    startIndex,
+    text: lines.slice(startIndex, endIndex).join("\n"),
+  };
+}
+
 export function validateWorkflow(workflow) {
   const missing = requiredCommands.filter((command) => !workflow.includes(command));
   if (missing.length > 0) {
     throw new Error(`CI workflow is missing required commands: ${missing.join(", ")}`);
   }
 
+  if (workflow.includes("pnpm/action-setup@")) {
+    throw new Error("CI must not use the pnpm/action-setup self-installer");
+  }
+
   const setupNodeStep = findActionStep(workflow, "actions/setup-node");
-  const setupPnpmStep = findActionStep(workflow, "pnpm/action-setup");
-  if (setupNodeStep.startIndex >= setupPnpmStep.startIndex) {
+  const installPnpmStep = findStepContaining(workflow, "npm install --global pnpm@11.12.0");
+  const resolveStoreStep = findStepContaining(workflow, "pnpm store path --silent");
+  const cacheStep = findActionStep(workflow, "actions/cache");
+  if (setupNodeStep.startIndex >= installPnpmStep.startIndex) {
     throw new Error("CI must install the pinned Node.js runtime before installing pnpm");
   }
-  if (setupPnpmStep.text.includes("standalone: true")) {
-    throw new Error("CI must not use the broken @pnpm/exe standalone bootstrap path");
+  if (installPnpmStep.startIndex >= resolveStoreStep.startIndex) {
+    throw new Error("CI must install pnpm before resolving its store path");
   }
-  if (!setupPnpmStep.text.includes("version: 11.12.0")) {
-    throw new Error("CI must install the pinned pnpm 11.12.0 version");
-  }
-  if (
-    !setupPnpmStep.text.includes("cache: true") ||
-    !setupPnpmStep.text.includes("cache_dependency_path: pnpm-lock.yaml")
-  ) {
-    throw new Error("CI must let pnpm/action-setup cache dependencies using pnpm-lock.yaml");
+  if (resolveStoreStep.startIndex >= cacheStep.startIndex) {
+    throw new Error("CI must resolve the pnpm store path before restoring its cache");
   }
   if (
-    setupNodeStep.text.includes("cache: pnpm") ||
-    setupNodeStep.text.includes("cache-dependency-path: pnpm-lock.yaml")
+    !resolveStoreStep.text.includes("id: pnpm-cache") ||
+    !resolveStoreStep.text.includes('>> "$GITHUB_OUTPUT"')
   ) {
-    throw new Error("CI setup-node must not query pnpm before pnpm/action-setup completes");
+    throw new Error("CI must expose the resolved pnpm store path as a step output");
+  }
+  if (
+    !cacheStep.text.includes("actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae") ||
+    !cacheStep.text.includes("path: ${{ steps.pnpm-cache.outputs.store_path }}") ||
+    !cacheStep.text.includes("hashFiles('pnpm-lock.yaml')") ||
+    !cacheStep.text.includes("11.12.0")
+  ) {
+    throw new Error("CI must cache the pnpm store with the pinned cache action and lockfile key");
   }
 
   if (!workflow.includes("pnpm infra:test:up") || !workflow.includes("pnpm infra:test:down")) {

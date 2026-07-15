@@ -2,9 +2,9 @@
 
 ## 1. Status
 
-- Result: `LOCAL_CI_BOOTSTRAP_REMEDIATION_COMPLETE_HOSTED_RERUN_PENDING`
-- Verify-release verdict for task acceptance: `rejected`; hosted run `29383770894` failed during pnpm bootstrap, and the current code-addressable repair still requires an exact-commit hosted rerun plus new independent acceptance
-- Baseline HEAD: `d33394e41a749a8f3c622ea640e80067e1a3286f`
+- Result: `SECOND_CI_BOOTSTRAP_REMEDIATION_COMPLETE_HOSTED_RERUN_PENDING`
+- Verify-release verdict for task acceptance: `rejected`; hosted run `29385424074` failed inside the pnpm action self-installer, and the superseding direct-install repair still requires an exact-commit hosted rerun plus new independent acceptance
+- Baseline HEAD: `ff20ad857b13a2bb54045ba91f5af7d9ca0e9d5b`
 - Remediation candidate: the Git commit containing this report; its hosted run is the authoritative external evidence
 - Branch: `main`
 - Active plan: `docs/plans/E00-foundation.md`
@@ -12,7 +12,7 @@
 - E01 started: `NO`
 - Task may be changed to `accepted`: `NO`; a new independent acceptance is still required
 
-The code-addressable portions of B-001, M-001, M-003, M-004 and U-001 remain closed locally. The earlier follow-up majors IA2-M-001 and IA2-M-002, E00-ACC-MAJ-001, and the repository-actionable E00-ACC-UNV-002 also remain closed locally. Hosted run `29383770894` disproved the first M-002 standalone remediation: `@pnpm/exe@11.12.0` retained its placeholder entrypoint and `actions/setup-node` failed when it queried pnpm for cache restoration. The superseding local repair installs pinned Node first, installs regular Node-backed pnpm second and moves lockfile caching to the pnpm action; a new exact-commit hosted result is still mandatory.
+The code-addressable portions of B-001, M-001, M-003, M-004 and U-001 remain closed locally. The earlier follow-up majors IA2-M-001 and IA2-M-002, E00-ACC-MAJ-001, and the repository-actionable E00-ACC-UNV-002 also remain closed locally. Hosted run `29383770894` disproved the standalone M-002 remediation. Hosted run `29385424074` then disproved the regular `pnpm/action-setup` path when its self-update from pnpm 11.1.1 to 11.12.0 exited `1`. The superseding repair installs exact `pnpm@11.12.0` with npm after pinned Node setup and uses a separately pinned cache action; a new exact-commit hosted result is still mandatory.
 
 ## 2. Finding closure matrix
 
@@ -20,7 +20,7 @@ The code-addressable portions of B-001, M-001, M-003, M-004 and U-001 remain clo
 |---|---|---|---|
 | B-001 log leakage | Recursive key normalization/suffix redaction plus a strict structured-field/value allowlist; raw content, credential variants, unknown objects, Error details and allowed-key smuggling fail closed | 9 observability tests; default unit suite 45/45; Worker integration proves payload IDs do not enter logs | CLOSED |
 | M-001 Windows contract drift | `.gitattributes` pins canonical/generated text to LF | `core.autocrlf=true` clean clone, frozen install, 14 contract tests and byte scan with generated CRLF count 0 | CLOSED |
-| M-002 hosted CI bootstrap | Pinned `actions/setup-node` now precedes pinned `pnpm/action-setup`; standalone mode is forbidden; the pnpm action owns the `pnpm-lock.yaml` cache and installs explicit `11.12.0` | Workflow contract regression accepts the canonical chain and rejects standalone mode, reversed order and missing cache; declaration check passes | LOCAL REPAIR COMPLETE / HOSTED RERUN PENDING |
+| M-002 hosted CI bootstrap | Pinned `actions/setup-node` precedes `npm install --global pnpm@11.12.0`; pinned `actions/cache` restores the resolved store using a `.nvmrc`/pnpm/lockfile key; all `pnpm/action-setup` use is forbidden | Workflow contract accepts the direct chain and rejects the action self-installer, reversed order and missing cache path; declaration check passes | SECOND LOCAL REPAIR COMPLETE / HOSTED RERUN PENDING |
 | M-003 false readiness | Web and Worker add a zero-row `FOR UPDATE SKIP LOCKED` plus update-capability queue probe | Migrated DB ready; empty DB live 200/ready 503; PostgreSQL outage/recovery gives Web and Worker ready `200/503/200` while live remains 200 | CLOSED |
 | M-004 Worker/correlation gap | Production Worker composes outbox dispatch, bounded claim loops, queue runtime and correlation; migration 0003 persists non-null request/trace IDs | Real PostgreSQL Worker test dispatches, succeeds/dead-letters, preserves correlation and drains; production smoke passes | CLOSED |
 | U-001 Corepack permission | README documents repository-local Corepack shim; hosted CI uses pinned setup actions without changing the developer's global Corepack installation | Local shim installed pnpm 11.12.0 and completed frozen install without administrator access | CLOSED LOCALLY |
@@ -52,9 +52,9 @@ The code-addressable portions of B-001, M-001, M-003, M-004 and U-001 remain clo
 | E00-S05 | PASS | Existing deterministic fakes remain unchanged | Offline 2/2; no OpenAI key for default tests/build/smoke |
 | E00-S06 | PASS | LF-stable generated contracts | 14 contract tests plus Windows clean-clone byte proof |
 | E00-S07 | PASS | Runtime-validated log allowlists and pool failure sanitization | Unit sentinel tests, Worker logs, headers/audit tests in full suites |
-| E00-S08 | LOCAL BOOTSTRAP REPAIR / HOSTED RERUN PENDING | Node-first pinned setup chain, pnpm-action lockfile cache, executable workflow regression, self-contained integration setup and deterministic E2E lifecycle | Prior application gates passed locally; the new bootstrap contract passes locally, but hosted run `29383770894` failed and cannot be closed until the superseding exact commit passes |
+| E00-S08 | SECOND LOCAL BOOTSTRAP REPAIR / HOSTED RERUN PENDING | Node-first setup, exact direct pnpm install, pinned lockfile cache, executable workflow regression, self-contained integration setup and deterministic E2E lifecycle | Prior application gates passed locally; hosted run `29385424074` failed in the now-removed pnpm self-installer and cannot close until the superseding exact commit passes |
 
-## 5. Commands recorded for the `d33394e` remediation candidate
+## 5. Commands recorded for the full E00 remediation baseline
 
 | Command/check | Exit | Result |
 |---|---:|---|
@@ -93,21 +93,25 @@ The code-addressable portions of B-001, M-001, M-003, M-004 and U-001 remain clo
 
 ## 7. Hosted result and residual condition
 
-- Hosted run `29383770894` for `d33394e...` completed with failure before dependency installation: `@pnpm/exe/pnpm` executed its `This file intentionally left blank` placeholder and returned exit code 127.
-- The current Node-first bootstrap repair is uncommitted and has only local workflow-contract evidence; it cannot inherit the failed hosted result.
+- Hosted run `29383770894` for `d33394e...` failed before dependency installation because the standalone executable path retained a placeholder entrypoint.
+- Hosted run `29385424074` for `ff20ad8...` reached pinned Node setup, then failed inside `pnpm/action-setup@v6.0.8` with self-installer exit code `1`.
+- The action's exact self-update sequence was reproduced locally and failed with `Cannot use 'in' operator to search for 'integrity' in undefined`; this establishes the cause independently of application gates.
+- The current direct-install candidate has local workflow-contract evidence only; it cannot inherit either failed hosted result.
 - E00 still requires a new exact-commit hosted CI success followed by independent acceptance.
 
 ## 8. Handoff
 
-1. Review and commit this E00-only remediation diff.
-2. Push it and require every GitHub Actions gate, including cleanup, to succeed on that exact commit.
-3. Start a new independent E00 acceptance session against the committed baseline.
+1. Push the exact E00-only remediation candidate.
+2. Require every GitHub Actions gate, including cleanup, to succeed on that exact commit.
+3. Start a new independent E00 acceptance session against the successful committed baseline.
 4. Do not mark E00 accepted and do not start E01 before that verdict.
 
-## 9. Current hosted-CI bootstrap follow-up
+## 9. Second hosted-CI bootstrap follow-up
 
 - `pnpm ci:verify-workflow`: exit `0`; 13 gates and 3 full-SHA actions declared.
-- `pnpm exec vitest run scripts/ci/workflow-contract.test.mjs`: exit `0`; 4/4 regressions passed.
+- `pnpm exec vitest run scripts/ci/workflow-contract.test.mjs`: exit `0`; 4/4 direct-bootstrap regressions passed.
+- `npm exec --yes --package=pnpm@11.12.0 -- pnpm --version`: exit `0`; npm installed and executed the exact package as version `11.12.0` without pnpm self-update.
+- Exact pnpm-action self-update reproduction: exit `1` with the same lockfile graph error; the action path is removed and contractually forbidden.
 - `pnpm specs:validate`: exit `0`; 87 requirements, 81 paths, 96 operations and 9 schemas with 0 errors/warnings.
 - `pnpm contracts:check`: exit `0`; generated output current and 14/14 contract tests passed.
 - `pnpm format:check`, `pnpm lint`, `pnpm typecheck`: exit `0`.
